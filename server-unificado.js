@@ -32,8 +32,8 @@ function serveStatic(req, res) {
     let filePath;
 
     if (urlPath.startsWith('/conciliacao')) {
-        let subPath = urlPath.replace('/conciliacao', '') || '/';
-        if (subPath === '/') subPath = '/index.html';
+        let subPath = urlPath.replace('/conciliacao', '');
+        if (subPath === '' || subPath === '/') subPath = '/index.html';
         if (subPath.startsWith('/')) subPath = subPath.substring(1);
         filePath = path.join(__dirname, 'conciliacao-site', subPath);
     } else {
