@@ -153,7 +153,9 @@ async function ensureSession() {
     }
 }
 
-function fetchOcorrencias() {
+function fetchOcorrencias(inicio, fim) {
+    inicio = inicio || '';
+    fim = fim || '';
     return new Promise(async function(resolve, reject) {
         try {
             await ensureSession();
@@ -162,14 +164,15 @@ function fetchOcorrencias() {
             return;
         }
         var hoje = new Date();
-        var dataStr = String(hoje.getDate()).padStart(2,'0') + '/' + String(hoje.getMonth()+1).padStart(2,'0') + '/' + hoje.getFullYear();
+        var dataInicioStr = inicio || (String(hoje.getDate()).padStart(2,'0') + '/' + String(hoje.getMonth()+1).padStart(2,'0') + '/' + hoje.getFullYear());
+        var dataFimStr = fim || dataInicioStr;
         var postData = querystring.stringify({
             draw: '1', start: '0', length: '200',
             'order[0][column]': '8', 'order[0][dir]': 'desc',
             'filtro-filtro-agrupamento': 'T',
             'filtro-filtro-tipo_data': '1',
-            'filtro-filtro-data_inicio': dataStr,
-            'filtro-filtro-data_fim': dataStr,
+            'filtro-filtro-data_inicio': dataInicioStr,
+            'filtro-filtro-data_fim': dataFimStr,
             'filtro-avancado': 'SIM'
         });
         [1,2,3].forEach(function(id) {
@@ -209,13 +212,14 @@ function fetchOcorrencias() {
 }
 
 function handleOcorrencias(req, res) {
+    var qs = querystring.parse((req.url.split('?')[1] || ''));
     res.writeHead(200, {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Cache-Control': 'no-cache'
     });
 
-    fetchOcorrencias()
+    fetchOcorrencias(qs.inicio, qs.fim)
         .then(function(dados) {
             var simplified = dados.map(function(o) {
                 return {

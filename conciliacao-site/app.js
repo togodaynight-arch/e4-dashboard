@@ -953,7 +953,11 @@ function stopMonitor() {
 
 function pollOcorrencias() {
     if (!monitorRunning) return;
-    fetch('/ocorrencias')
+    var range = getDateRange();
+    var url = '/ocorrencias';
+    if (range.inicio) url += '?inicio=' + range.inicio.split('-').reverse().join('/');
+    if (range.fim && range.inicio !== range.fim) url += (range.inicio ? '&' : '?') + 'fim=' + range.fim.split('-').reverse().join('/');
+    fetch(url)
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (!data.ok) {
