@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: e4-dashboard
+    runtime: node
+    buildCommand: ""
+    startCommand: node server-unificado.js
+    plan: free
+    envVars:
+      - key: PORT
+        value: "3000"
