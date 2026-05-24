@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leitor de Código de Barras - E4 Vendas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="scanner.css">
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="nav-inner">
+            <a class="brand-logo" href="/">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#fff"/><path d="M7 14L11 18L21 8" stroke="#d9b759" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>Leitor de Preços</span>
+            </a>
+            <a class="nav-link" href="/">
+                <i class="material-icons">dashboard</i> Dashboard
+            </a>
+        </div>
+    </nav>
+
+    <div class="dashboard-body">
+
+        <!-- Seletor de modo -->
+        <div class="scanner-mode-tabs">
+            <button class="mode-tab active" data-mode="usb" onclick="switchMode('usb')">
+                <i class="material-icons">usb</i> Scanner USB
+            </button>
+            <button class="mode-tab" data-mode="camera" onclick="switchMode('camera')">
+                <i class="material-icons">camera_alt</i> Câmera
+            </button>
+        </div>
+
+        <!-- MODO 1: Scanner USB / Teclado -->
+        <div class="mode-panel active" id="panel-usb">
+            <div class="card scanner-card">
+                <div class="card-content">
+                    <div class="scanner-info-box">
+                        <i class="material-icons" style="font-size:48px;color:#d9b759;">qr_code_scanner</i>
+                        <h3>Scanner USB / Digitação</h3>
+                        <p>Escaneie com um leitor USB ou digite o código de barras manualmente e pressione <b>Enter</b></p>
+                    </div>
+                    <div class="barcode-input-wrapper">
+                        <div class="barcode-prefix">
+                            <i class="material-icons">qr_code</i>
+                        </div>
+                        <input
+                            type="text"
+                            id="usb-barcode-input"
+                            class="barcode-input"
+                            placeholder="Escaneie ou digite o código de barras..."
+                            autofocus
+                            autocomplete="off"
+                        />
+                        <button class="btn-search" onclick="manualSearch()">
+                            <i class="material-icons">search</i>
+                        </button>
+                    </div>
+                    <p class="input-hint">Posicione o cursor aqui e escaneie — o código aparece automaticamente</p>
+                </div>
+            </div>
+
+            <!-- Resultado da consulta -->
+            <div class="result-panel" id="result-usb" style="display:none;">
+                <!-- preenchido via JS -->
+            </div>
+
+            <!-- Histórico de leituras -->
+            <div class="history-panel" id="history-panel">
+                <h4><i class="material-icons">history</i> Histórico de Leituras</h4>
+                <div class="history-list" id="history-list">
+                    <p class="history-empty">Nenhum código escaneado ainda</p>
+                </div>
+                <button class="btn-clear" onclick="clearHistory()" id="btn-clear-history" style="display:none;">
+                    <i class="material-icons">delete</i> Limpar histórico
+                </button>
+            </div>
+        </div>
+
+        <!-- MODO 2: Câmera -->
+        <div class="mode-panel" id="panel-camera">
+            <div class="card scanner-card">
+                <div class="card-content">
+                    <div class="scanner-info-box">
+                        <i class="material-icons" style="font-size:48px;color:#d9b759;">camera_alt</i>
+                        <h3>Leitor por Câmera</h3>
+                        <p>Aponte a câmera para o código de barras — funcional no celular também!</p>
+                    </div>
+
+                    <div class="camera-container" id="camera-container">
+                        <div class="camera-placeholder" id="camera-placeholder">
+                            <i class="material-icons">videocam_off</i>
+                            <p>Clique em "Iniciar Câmera" para começar</p>
+                            <button class="btn-start-camera" id="btn-start-camera" onclick="startCamera()">
+                                <i class="material-icons">play_arrow</i> Iniciar Câmera
+                            </button>
+                        </div>
+                        <div class="camera-viewport" id="camera-viewport" style="display:none;">
+                            <div id="reader"></div>
+                        </div>
+                    </div>
+
+                    <div class="camera-controls" id="camera-controls" style="display:none;">
+                        <button class="btn-stop-camera" onclick="stopCamera()">
+                            <i class="material-icons">stop</i> Parar Câmera
+                        </button>
+                        <label class="camera-select-label" for="camera-select">
+                            <i class="material-icons">switch_camera</i>
+                        </label>
+                        <select id="camera-select" onchange="switchCamera()" class="camera-select"></select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resultado da consulta (câmera) -->
+            <div class="result-panel" id="result-camera" style="display:none;">
+                <!-- preenchido via JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="scanner.js"></script>
+</body>
+</html>

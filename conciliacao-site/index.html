@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E4 Conciliação</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="/conciliacao/style.css">
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="nav-inner">
+            <a class="brand-logo">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#fff"/><path d="M7 14L11 18L21 8" stroke="#32bcad" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>E4 Conciliação</span>
+            </a>
+            <div class="nav-loading" id="global-spinner">
+                <div class="spinner"></div>
+                <span>Carregando...</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-body">
+        <div class="filter-bar">
+            <form onsubmit="return false;" style="align-items:center;gap:12px;flex-wrap:wrap;">
+                <div class="filter-group">
+                    <label>Período</label>
+                    <select id="filtro-periodo" onchange="aoMudarPeriodo()">
+                        <option value="day" selected>Hoje</option>
+                        <option value="week">Últimos 7 Dias</option>
+                        <option value="mon">Esse Mês</option>
+                        <option value="all">Todo Período</option>
+                        <option value="custom">Personalizado</option>
+                    </select>
+                </div>
+                <div class="filter-group custom-dates" id="custom-dates" style="display:none;">
+                    <label>De</label>
+                    <input type="date" id="data-inicio">
+                    <label>Até</label>
+                    <input type="date" id="data-fim">
+                </div>
+                <div class="filter-group">
+                    <label>Loja</label>
+                    <select id="filtro-loja" onchange="rebuild()">
+                        <option value="">Todas as lojas</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Status</label>
+                    <select id="filtro-status" onchange="rebuild()">
+                        <option value="todos">Todos</option>
+                        <option value="autorizado">Autorizados</option>
+                        <option value="cancelado">Cancelados</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Buscar</label>
+                    <input type="text" id="filtro-busca" placeholder="Nome, cupom..." oninput="rebuild()">
+                </div>
+                <button type="button" class="btn-action btn-black" onclick="loadVendas()">
+                    <i class="material-icons" style="font-size:16px;">refresh</i> Atualizar
+                </button>
+                <button type="button" class="btn-action btn-green" onclick="exportXLSX()">
+                    <i class="material-icons" style="font-size:16px;">download</i> Exportar Excel
+                </button>
+                <button type="button" class="btn-action btn-black" onclick="toggleOrdemHora()" id="btn-hora">
+                    <i class="material-icons" style="font-size:16px;">schedule</i> Por Hora
+                </button>
+            </form>
+        </div>
+
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('timeline')" id="tab-timeline">
+                <i class="material-icons" style="font-size:16px;">timeline</i> Linha do Tempo
+            </button>
+            <button class="tab-btn" onclick="switchTab('verificacao')" id="tab-verificacao">
+                <i class="material-icons" style="font-size:16px;">security</i> Verificação
+            </button>
+            <button class="tab-btn" onclick="switchTab('conciliacao')" id="tab-conciliacao">
+                <i class="material-icons" style="font-size:16px;">compare_arrows</i> Conciliação
+            </button>
+        </div>
+
+        <div class="tab-content" id="tab-timeline-content">
+            <div class="timeline-container">
+                <div class="timeline-header">
+                    <h2><i class="material-icons" style="font-size:18px;vertical-align:middle;margin-right:6px;">timeline</i> Linha do Tempo</h2>
+                    <span style="font-size:12px;color:var(--text-muted);" id="timeline-info">Tudo por hora</span>
+                </div>
+                <div class="timeline-scroll" id="timeline-list">
+                    <div class="empty-state">
+                        <i class="material-icons" style="font-size:48px;color:#ccc;display:block;margin-bottom:12px;">timeline</i>
+                        Clique em "Atualizar" e inicie o monitoramento para ver tudo reunido.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-verificacao-content" style="display:none;">
+            <div class="timeline-container">
+                <div class="timeline-header" style="background:#fff5f5;border-bottom:1px solid #fed7d7;">
+                    <h2 style="color:#c53030;"><i class="material-icons" style="font-size:18px;vertical-align:middle;margin-right:6px;">security</i> Verificação</h2>
+                    <span style="font-size:12px;color:var(--text-muted);" id="verificacao-info">Entradas sem compra + Vendas canceladas</span>
+                </div>
+                <div class="timeline-scroll" id="verificacao-list">
+                    <div class="empty-state">
+                        <i class="material-icons" style="font-size:48px;color:#ccc;display:block;margin-bottom:12px;">security</i>
+                        Carregue vendas e inicie o monitoramento.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" id="tab-conciliacao-content" style="display:none;">
+        <div class="split-layout">
+            <div class="split-col col-vendas">
+                <div class="split-col-header col-vendas-header">
+                    <h2><i class="material-icons" style="font-size:20px;vertical-align:middle;margin-right:6px;">shopping_cart</i> Vendas (API)</h2>
+                </div>
+                <div class="split-col-count" id="vendas-count">Clique em "Atualizar" para carregar</div>
+                <div class="split-col-scroll" id="vendas-list">
+                    <div class="empty-state">
+                        <i class="material-icons" style="font-size:48px;color:#ccc;display:block;margin-bottom:12px;">shopping_cart</i>
+                        Nenhuma venda carregada.
+                    </div>
+                </div>
+                <div class="pagination-row" id="vendas-pagination-row" style="display:none;">
+                    <span id="vendas-info"></span>
+                    <div class="pagination" id="vendas-pagination"></div>
+                </div>
+            </div>
+
+            <div class="split-col col-entradas">
+                <div class="split-col-header col-entradas-header">
+                    <h2><i class="material-icons" style="font-size:20px;vertical-align:middle;margin-right:6px;">login</i> Entradas (Planilha)</h2>
+                </div>
+                <div class="upload-area" id="upload-area" onclick="document.getElementById('excel-file').click()">
+                    <i class="material-icons" style="font-size:36px;color:#32bcad;">cloud_upload</i>
+                    <div>
+                        <strong id="upload-label">Importar Planilha de Entradas</strong>
+                        <p>Arraste ou clique — .xlsx, .xls, .csv</p>
+                    </div>
+                    <input type="file" id="excel-file" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelUpload(event)">
+                </div>
+                <div style="text-align:center;padding:6px 12px;background:#f0fff4;border-bottom:1px solid #c6f6d5;">
+                    <button type="button" class="btn-action btn-green" onclick="loadEntradasPorta()" id="btn-entradas-api" style="font-size:12px;padding:6px 12px;">
+                        <i class="material-icons" style="font-size:14px;">cloud_download</i> Carregar da API
+                    </button>
+                    <span style="font-size:10px;color:var(--text-muted);margin-left:8px;">Logs de Porta de Acesso</span>
+                </div>
+                <div class="split-col-count" id="entradas-count">0 entradas</div>
+                <div class="split-col-scroll" id="entradas-list">
+                    <div class="empty-state">
+                        <i class="material-icons" style="font-size:48px;color:#ccc;display:block;margin-bottom:12px;">login</i>
+                        Importe uma planilha para ver as entradas.
+                    </div>
+                </div>
+                <div class="pagination-row" id="entradas-pagination-row" style="display:none;">
+                    <span id="entradas-info"></span>
+                    <div class="pagination" id="entradas-pagination"></div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <div class="monitor-section">
+            <div class="monitor-header">
+                <h2><i class="material-icons" style="font-size:20px;vertical-align:middle;margin-right:6px;">warning</i> Monitoramento de Ocorrências</h2>
+                <div class="monitor-header-right">
+                    <div class="monitor-filtro-tipos" id="monitor-filtro-tipos">
+                        <label class="monitor-check" id="lbl-1"><input type="checkbox" checked onchange="atualizarFiltroTipos()" value="1"> 0001</label>
+                        <label class="monitor-check" id="lbl-2"><input type="checkbox" checked onchange="atualizarFiltroTipos()" value="2"> 0002</label>
+                        <label class="monitor-check" id="lbl-8"><input type="checkbox" checked onchange="atualizarFiltroTipos()" value="8"> 0008</label>
+                        <label class="monitor-check" id="lbl-13"><input type="checkbox" checked onchange="atualizarFiltroTipos()" value="13"> 0013</label>
+                        <label class="monitor-check" id="lbl-32"><input type="checkbox" checked onchange="atualizarFiltroTipos()" value="32"> 0032</label>
+                        <label class="monitor-check" id="lbl-41"><input type="checkbox" checked onchange="atualizarFiltroTipos()" value="41"> 0041</label>
+                        <label class="monitor-check" id="lbl-42"><input type="checkbox" checked onchange="atualizarFiltroTipos()" value="42"> 0042</label>
+                    </div>
+                    <span class="monitor-status" id="monitor-status">
+                        <span class="monitor-dot offline" id="monitor-dot"></span>
+                        <span id="monitor-status-text">Parado</span>
+                    </span>
+                    <button class="btn-action btn-green" onclick="toggleMonitor()" id="btn-monitor">
+                        <i class="material-icons" style="font-size:16px;">play_arrow</i> Iniciar
+                    </button>
+                </div>
+            </div>
+            <div class="monitor-info" id="monitor-info">
+                <span id="monitor-count">0 ocorrências hoje</span>
+                <span id="monitor-last">Última atualização: --</span>
+            </div>
+            <div class="monitor-list" id="monitor-list">
+                <div class="empty-state">Clique em "Iniciar" para começar o monitoramento.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 id="modal-title">Detalhe</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="/conciliacao/app.js"></script>
+</body>
+</html>
