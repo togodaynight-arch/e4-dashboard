@@ -36,11 +36,13 @@
                         <option value="custom">Personalizado</option>
                     </select>
                 </div>
-                <div class="filter-group custom-dates" id="custom-dates" style="display:none;">
+                <div class="filter-group">
                     <label>De</label>
-                    <input type="date" id="data-inicio">
+                    <input type="date" id="data-inicio" onchange="aoMudarData()">
+                </div>
+                <div class="filter-group">
                     <label>Até</label>
-                    <input type="date" id="data-fim">
+                    <input type="date" id="data-fim" onchange="aoMudarData()">
                 </div>
                 <div class="filter-group">
                     <label>Loja</label>

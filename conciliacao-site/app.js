@@ -55,8 +55,6 @@ function apiHeaders() {
 async function loadVendas() {
     var range = getDateRange();
     if (!range.inicio || !range.fim) { alert('Selecione as datas.'); return; }
-    document.getElementById('data-inicio').value = range.inicio;
-    document.getElementById('data-fim').value = range.fim;
 
     var spinner = document.getElementById('global-spinner');
     spinner.classList.add('visible');
@@ -97,18 +95,30 @@ async function loadVendas() {
 }
 
 function getDateRange() {
+    var inicio = document.getElementById('data-inicio').value;
+    var fim = document.getElementById('data-fim').value;
+    if (inicio && fim) return { inicio: inicio, fim: fim };
     var period = document.getElementById('filtro-periodo').value;
     var now = new Date();
     if(period==='day') return {inicio: dataLocal(now), fim: dataLocal(now)};
     if(period==='week'){var wa=new Date(now);wa.setDate(wa.getDate()-7);return {inicio: dataLocal(wa), fim: dataLocal(now)};}
     if(period==='mon') return {inicio: now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01', fim: dataLocal(now)};
     if(period==='all') return {inicio: '2025-01-01', fim: dataLocal(now)};
-    if(period==='custom') return {inicio: document.getElementById('data-inicio').value, fim: document.getElementById('data-fim').value};
-    return {inicio: '2025-01-01', fim: dataLocal(now)};
+    return {inicio: dataLocal(now), fim: dataLocal(now)};
 }
 
 function aoMudarPeriodo() {
-    document.getElementById('custom-dates').style.display = document.getElementById('filtro-periodo').value === 'custom' ? 'flex' : 'none';
+    var now = new Date();
+    var period = document.getElementById('filtro-periodo').value;
+    if(period==='day'){ document.getElementById('data-inicio').value = dataLocal(now); document.getElementById('data-fim').value = dataLocal(now); }
+    else if(period==='week'){ var wa=new Date(now);wa.setDate(wa.getDate()-7); document.getElementById('data-inicio').value = dataLocal(wa); document.getElementById('data-fim').value = dataLocal(now); }
+    else if(period==='mon'){ document.getElementById('data-inicio').value = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01'; document.getElementById('data-fim').value = dataLocal(now); }
+    else if(period==='all'){ document.getElementById('data-inicio').value = '2025-01-01'; document.getElementById('data-fim').value = dataLocal(now); }
+    if (allSales.length > 0) { vendasPage = 1; rebuild(); }
+}
+
+function aoMudarData() {
+    document.getElementById('filtro-periodo').value = 'custom';
     if (allSales.length > 0) { vendasPage = 1; rebuild(); }
 }
 
@@ -500,6 +510,7 @@ function loadEntradasPorta() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    aoMudarPeriodo();
     var uploadArea = document.getElementById('upload-area');
     uploadArea.addEventListener('dragover',function(e){e.preventDefault();uploadArea.classList.add('dragover');});
     uploadArea.addEventListener('dragleave',function(){uploadArea.classList.remove('dragover');});
