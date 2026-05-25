@@ -691,8 +691,9 @@ function renderVerificacao() {
         if (!temVenda) {
             countSemVenda++;
             var d = new Date(log.data);
+            var diaStr = String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
             html += '<div class="tl-row entrada">' +
-                '<span class="tl-time">' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + '</span>' +
+                '<span class="tl-time">' + diaStr + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + '</span>' +
                 '<span class="tl-tag aviso">⚠️ Sem compra</span>' +
                 '<span class="tl-desc">' + (log.cliente || 'Visitante') + (log.cpf ? ' | CPF ' + log.cpf : '') + '</span>' +
                 '<span class="tl-loja">' + (log.unidade || '') + '</span>' +
@@ -708,6 +709,7 @@ function renderVerificacao() {
         }
         countCancelado++;
         var d = new Date(s.dataEfetivacao);
+        var diaStr = String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
         var prods = (s.produtos||[]).filter(function(p){return !p.cancelado}).map(function(p){return p.descricaoReduzida||p.descricaoComercial}).join(', ');
         var prodsCancel = (s.produtos||[]).filter(function(p){return p.cancelado}).map(function(p){return p.descricaoReduzida||p.descricaoComercial}).join(', ');
         var tagClass = s.cancelado ? 'ocorrencia' : 'aviso';
@@ -717,7 +719,7 @@ function renderVerificacao() {
         if (prodsCancel) desc += ' | CANCELADOS: ' + prodsCancel;
 
         html += '<div class="tl-row ' + (s.cancelado ? 'ocorrencia' : 'aviso') + '">' +
-            '<span class="tl-time">' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + '</span>' +
+            '<span class="tl-time">' + diaStr + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + '</span>' +
             '<span class="tl-tag ' + tagClass + '">' + motivo + '</span>' +
             '<span class="tl-desc">' + desc + '</span>' +
             '</div>';
@@ -746,6 +748,8 @@ function renderTimeline() {
             items.push({
                 hora: d.getHours(),
                 minutos: d.getMinutes(),
+                dia: String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'),
+                data: d,
                 time: String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'),
                 type: 'entrada',
                 nome: o.cliente || 'Visitante',
@@ -773,6 +777,7 @@ function renderTimeline() {
         items.push({
             hora: d.getHours(),
             minutos: d.getMinutes(),
+            dia: String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'),
             time: String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'),
             type: 'venda',
             nome: nomeLoja(s) || '',
@@ -794,6 +799,7 @@ function renderTimeline() {
             items.push({
                 hora: d.getHours(),
                 minutos: d.getMinutes(),
+                dia: String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'),
                 time: String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'),
                 type: 'ocorrencia',
                 nome: o.ocorrencia || '',
@@ -811,6 +817,7 @@ function renderTimeline() {
             items.push({
                 hora: pd.getHours(),
                 minutos: pd.getMinutes(),
+                dia: String(pd.getDate()).padStart(2,'0') + '/' + String(pd.getMonth()+1).padStart(2,'0'),
                 time: String(pd.getHours()).padStart(2,'0') + ':' + String(pd.getMinutes()).padStart(2,'0'),
                 type: 'entrada-excel',
                 nome: (row['Nome'] || row['Cliente'] || '') + ' | ' + (row['Tipo'] || row['Ação'] || 'ENTRADA'),
@@ -832,14 +839,17 @@ function renderTimeline() {
     info.textContent = counts.venda + ' vendas | ' + counts.entrada + ' entradas | ' + counts.ocorrencia + ' ocorrências';
 
     var html = '';
+    var lastDia = null;
     var lastHour = null;
 
     // Agrupa: entrada + vendas próximas em até 5 min
     var processedVendas = {};
     items.forEach(function(item) {
-        if (item.hora !== lastHour) {
+        var currentDia = item.dia || '';
+        if (currentDia !== lastDia || item.hora !== lastHour) {
+            lastDia = currentDia;
             lastHour = item.hora;
-            html += '<div class="timeline-hour">' + String(item.hora).padStart(2,'0') + ':00</div>';
+            html += '<div class="timeline-hour">' + currentDia + ' ' + String(item.hora).padStart(2,'0') + ':00</div>';
         }
 
         if (item.type === 'entrada') {
