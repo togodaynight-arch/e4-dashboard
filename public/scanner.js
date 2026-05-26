@@ -77,94 +77,108 @@ function reScan(codigo) {
 }
 
 // =============================================
-// CONSULTA DE PRODUTO (SIMULADA)
+// CONSULTA DE PRODUTO (API REAL DO E4)
 // =============================================
-
-var DEMO_PRODUCTS = {
-    '7891000247749': { nome: 'Biscoito Recheado Oreo 90g', preco: 5.99 },
-    '7891910000197': { nome: 'Desodorante Rexona Men 150ml', preco: 14.90 },
-    '7891155000114': { nome: 'Sabonete Lux Buquê 85g', preco: 2.49 },
-    '7894900010015': { nome: 'Refrigerante Coca-Cola Lata 350ml', preco: 4.79 },
-    '7891149410008': { nome: 'Feijão Carioca Camil 1kg', preco: 8.99 },
-    '7891000053508': { nome: 'Arroz Tio João 5kg', preco: 22.90 },
-    '7891040020087': { nome: 'Macarrão Espaguete Barilla 500g', preco: 7.49 },
-    '7893000222032': { nome: 'Cerveja Heineken Long Neck 330ml', preco: 6.99 },
-    '7891055307016': { nome: 'Leite Integral Italac 1L', preco: 5.49 },
-    '7891096000851': { nome: 'Café Pilão Torrado e Moído 500g', preco: 18.90 },
-    '7891200025202': { nome: 'Shampoo Seda Ceramidas 325ml', preco: 12.99 },
-    '7896019600204': { nome: 'Açúcar Cristal União 1kg', preco: 4.49 },
-    '7891520650027': { nome: 'Óleo de Soja Liza 900ml', preco: 7.29 },
-    '7891152000254': { nome: 'Creme Dental Colgate Tripla Ação 90g', preco: 3.99 },
-    '7898089500091': { nome: 'Guardanapo de Papel Snob 50un', preco: 2.99 }
-};
 
 function lookupProduct(codigo) {
     codigo = codigo.trim();
     if (!codigo) return;
 
-    // Debounce: evita leitura dupla de scanners
     var now = Date.now();
     if (codigo === lastScannedCode && now - lastScanTime < SCAN_DEBOUNCE) return;
     lastScannedCode = codigo;
     lastScanTime = now;
 
-    // Mostra loading no painel do modo ativo
     var resultEl = document.getElementById('result-' + currentMode);
     resultEl.style.display = 'block';
     resultEl.innerHTML = '<div class="result-loading"><div class="spinner"></div><span style="font-size:13px;color:var(--text-secondary);">Consultando código <b>' + codigo + '</b>...</span></div>';
     resultEl.scrollIntoView({ behavior: 'smooth' });
 
-    // Simula delay de API (200-600ms)
-    setTimeout(function() {
-        var produto = DEMO_PRODUCTS[codigo];
+    // Primeiro tenta API do E4
+    fetch('/api/produtos/produto?ean=' + encodeURIComponent(codigo))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data && data.descricaoComercial) {
+                showProductResult(resultEl, codigo, data.descricaoComercial || data.descricaoReduzida, data.precoVenda || null);
+                saveAndBeep(codigo, data.descricaoComercial || data.descricaoReduzida, data.precoVenda || null);
+            } else {
+                // Tenta buscar no Google/OpenFoodFacts
+                buscarGoogle(codigo, resultEl);
+            }
+        })
+        .catch(function() {
+            buscarGoogle(codigo, resultEl);
+        });
+}
 
-        if (produto) {
-            resultEl.innerHTML = '<div class="result-success">' +
-                '<div class="result-left">' +
-                    '<div class="result-icon"><i class="material-icons">check_circle</i></div>' +
+function buscarGoogle(codigo, resultEl) {
+    resultEl.innerHTML = '<div class="result-loading"><div class="spinner"></div><span style="font-size:13px;color:var(--text-secondary);">Buscando no Google: <b>' + codigo + '</b>...</span></div>';
+
+    // Tenta Open Food Facts (gratuito, sem autenticação)
+    fetch('https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(codigo) + '.json')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data && data.product && data.product.product_name) {
+                var nome = data.product.product_name;
+                showProductResult(resultEl, codigo, nome, null);
+                saveAndBeep(codigo, nome, null);
+            } else {
+                // Fallback: abre busca no Google em nova aba
+                var googleUrl = 'https://www.google.com/search?q=codigo+barras+' + encodeURIComponent(codigo);
+                resultEl.innerHTML = '<div class="result-error">' +
+                    '<i class="material-icons">search</i>' +
                     '<div>' +
-                        '<div class="result-name">' + produto.nome + '</div>' +
-                        '<div class="result-cod">' + codigo + '</div>' +
+                        '<h4>Produto não encontrado no sistema</h4>' +
+                        '<p>Código <b>' + codigo + '</b></p>' +
+                        '<a href="' + googleUrl + '" target="_blank" class="btn-google-search">' +
+                            '<i class="material-icons" style="font-size:16px;">open_in_new</i> Buscar no Google' +
+                        '</a>' +
                     '</div>' +
-                '</div>' +
-                '<div class="result-price-tag">' +
-                    '<div class="result-price">R$ ' + produto.preco.toLocaleString('pt-BR', {minimumFractionDigits:2}) + '</div>' +
-                    '<div class="result-below">preço de venda</div>' +
-                '</div>' +
-            '</div>';
-
-            // Salva no histórico
-            saveToHistory({
-                codigo: codigo,
-                nome: produto.nome,
-                preco: produto.preco,
-                data: new Date().toISOString()
-            });
-
-            // Som de confirmação (beep) via AudioContext
-            beep(800, 0.08, 'sine');
-        } else {
+                '</div>';
+                saveToHistory({ codigo: codigo, nome: 'Não encontrado', preco: null, data: new Date().toISOString() });
+                beep(200, 0.15, 'square');
+            }
+        })
+        .catch(function() {
+            var googleUrl = 'https://www.google.com/search?q=codigo+barras+' + encodeURIComponent(codigo);
             resultEl.innerHTML = '<div class="result-error">' +
                 '<i class="material-icons">error_outline</i>' +
                 '<div>' +
-                    '<h4>Código não encontrado</h4>' +
-                    '<p>O código <b>' + codigo + '</b> não está cadastrado na base de produtos.</p>' +
+                    '<h4>Produto não encontrado</h4>' +
+                    '<p>Código <b>' + codigo + '</b></p>' +
+                    '<a href="' + googleUrl + '" target="_blank" class="btn-google-search">' +
+                        '<i class="material-icons" style="font-size:16px;">open_in_new</i> Buscar no Google' +
+                    '</a>' +
                 '</div>' +
             '</div>';
-
-            // Som de erro
+            saveToHistory({ codigo: codigo, nome: 'Não encontrado', preco: null, data: new Date().toISOString() });
             beep(200, 0.15, 'square');
-            beep(180, 0.15, 'square');
+        });
+}
 
-            // Salva no histórico sem preço
-            saveToHistory({
-                codigo: codigo,
-                nome: 'Não encontrado',
-                preco: null,
-                data: new Date().toISOString()
-            });
-        }
-    }, 300 + Math.random() * 300);
+function showProductResult(el, codigo, nome, preco) {
+    var priceHtml = '';
+    if (preco != null) {
+        priceHtml = '<div class="result-price-tag">' +
+            '<div class="result-price">R$ ' + Number(preco).toLocaleString('pt-BR', {minimumFractionDigits:2}) + '</div>' +
+            '<div class="result-below">preço de venda</div>' +
+        '</div>';
+    }
+    el.innerHTML = '<div class="result-success">' +
+        '<div class="result-left">' +
+            '<div class="result-icon"><i class="material-icons">check_circle</i></div>' +
+            '<div>' +
+                '<div class="result-name">' + nome + '</div>' +
+                '<div class="result-cod">' + codigo + '</div>' +
+            '</div>' +
+        '</div>' +
+        priceHtml +
+    '</div>';
+}
+
+function saveAndBeep(codigo, nome, preco) {
+    saveToHistory({ codigo: codigo, nome: nome, preco: preco != null ? Number(preco) : null, data: new Date().toISOString() });
+    beep(800, 0.08, 'sine');
 }
 
 // =============================================
