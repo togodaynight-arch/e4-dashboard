@@ -38,6 +38,7 @@ function serveStatic(req, res) {
         filePath = path.join(__dirname, 'conciliacao-site', subPath);
     } else {
         if (urlPath === '/') urlPath = '/index.html';
+        if (urlPath === '/scanner') urlPath = '/scanner.html';
         filePath = path.join(__dirname, 'public', urlPath);
     }
 
