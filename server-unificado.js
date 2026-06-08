@@ -39,6 +39,7 @@ function serveStatic(req, res) {
     } else {
         if (urlPath === '/') urlPath = '/index.html';
         if (urlPath === '/scanner') urlPath = '/scanner.html';
+        if (urlPath === '/busca-produto') urlPath = '/busca-produto.html';
         filePath = path.join(__dirname, 'public', urlPath);
     }
 
