@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busca de Produtos - E4</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="busca-produto.css">
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="nav-inner">
+            <a class="brand-logo" href="/">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#fff"/><path d="M7 14L11 18L21 8" stroke="#d9b759" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>Busca de Produtos</span>
+            </a>
+            <a class="nav-link" href="/"><i class="material-icons">dashboard</i> Dashboard</a>
+        </div>
+    </nav>
+    <div class="dashboard-body">
+        <div class="card search-card">
+            <div class="card-content">
+                <div class="search-header">
+                    <i class="material-icons" style="font-size:40px;color:#d9b759;">qr_code_scanner</i>
+                    <div><h3>Buscar Produto por Código de Barras</h3><p>Escaneie ou digite o EAN para consultar preço, custo e dados fiscais</p></div>
+                </div>
+                <div class="search-input-wrapper">
+                    <div class="search-prefix"><i class="material-icons">qr_code</i></div>
+                    <input type="text" id="ean-input" class="search-input" placeholder="Digite ou escaneie o código de barras..." autofocus autocomplete="off">
+                    <button class="btn-search" onclick="buscarProduto()"><i class="material-icons">search</i> Buscar</button>
+                </div>
+            </div>
+        </div>
+        <div class="result-panel" id="result-panel" style="display:none;"></div>
+        <div class="history-panel">
+            <div class="history-header"><h4><i class="material-icons">history</i> Histórico de Consultas</h4><button class="btn-clear" onclick="exportarRelatorio()" id="btn-export" style="display:none;"><i class="material-icons">download</i> Exportar</button></div>
+            <div class="history-list" id="history-list"><p class="history-empty">Nenhum produto consultado ainda</p></div>
+        </div>
+    </div>
+    <script src="busca-produto.js"></script>
+</body>
+</html>
