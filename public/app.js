@@ -178,8 +178,8 @@ function renderCupons() {
                 html += '<div class="entry-badge">' +
                     '<i class="material-icons" style="font-size:14px;color:#38a169;">login</i>' +
                     '<span class="entry-badge-nome">' + (melhor.cliente || 'Entrada') + '</span>' +
+                    '<span class="entry-badge-loja">' + (melhor.unidade || '') + '</span>' +
                     '<span class="entry-badge-time">' + String(ed.getHours()).padStart(2,'0') + ':' + String(ed.getMinutes()).padStart(2,'0') + '</span>' +
-                    (melhor.cpf ? '<span class="entry-badge-cpf">' + melhor.cpf + '</span>' : '') +
                     '</div>';
             }
         }
@@ -195,6 +195,21 @@ function renderCupons() {
         var userName = 'Totem '+(nomeLoja(s)||''); if(s.pdvId) userName+=' '+s.pdvCodigo;
         html+='<div class="sale-card" onclick="openDetail(\''+s.id+'\')"><div class="sale-card-inner"><div class="sale-avatar"><i class="material-icons">person</i></div><div class="sale-left"><p class="sale-date">'+formatarData(s.dataEfetivacao)+'</p><p class="sale-meta">Usuário: '+userName+'</p><p class="sale-meta">Loja: '+(nomeLoja(s)||'--')+'</p><p class="sale-meta">#'+s.cupom+'</p></div><div class="sale-center"><p class="sale-total-line"><b>Total: '+formatarMoeda(s.valorLiquido)+'</b></p>'+paymentLines+'</div><div class="sale-right"><table class="sale-products-table"><thead><tr><th>Produto</th><th>Valor</th><th>Qtd</th></tr></thead><tbody>'+productRows+'</tbody></table></div></div></div>';
     });
+    // Entradas sem venda correspondente
+    if (logPortaAtivo && logPortaData.length > 0) {
+        logPortaData.forEach(function(e) {
+            if (!entradasUsadas[e.id]) {
+                var ed = new Date(e.data);
+                html += '<div class="entry-badge sem-compra">' +
+                    '<i class="material-icons" style="font-size:14px;color:#e53e3e;">login</i>' +
+                    '<span class="entry-badge-nome">' + (e.cliente || 'Entrada') + '</span>' +
+                    '<span class="entry-badge-loja">' + (e.unidade || '') + '</span>' +
+                    '<span class="entry-badge-time">' + String(ed.getHours()).padStart(2,'0') + ':' + String(ed.getMinutes()).padStart(2,'0') + '</span>' +
+                    '<span class="entry-badge-sem">Sem compra</span>' +
+                    '</div>';
+            }
+        });
+    }
     listEl.innerHTML = html;
     var totalPages = Math.ceil(filteredSales.length / PAGE_SIZE);
     document.getElementById('cupons-info').textContent = 'Mostrando '+(start+1)+'-'+Math.min(start+PAGE_SIZE, filteredSales.length)+' de '+filteredSales.length.toLocaleString('pt-BR');
