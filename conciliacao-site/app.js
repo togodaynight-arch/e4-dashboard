@@ -791,9 +791,13 @@ function renderTimeline() {
         });
     });
 
-    // Occurrences
+    // Occurrences (only if type is checked)
+    var checkedOcorr = [];
+    document.querySelectorAll('#monitor-filtro-tipos input[type=checkbox]:checked').forEach(function(cb) {
+        if (['1','2','8','13','32'].indexOf(cb.value) !== -1) checkedOcorr.push(cb.value);
+    });
     (monitorAllData || []).forEach(function(o) {
-        if (['1','2','8','13','32'].indexOf(o.codigo) !== -1) {
+        if (checkedOcorr.indexOf(o.codigo) !== -1) {
             var d = new Date(o.data);
             if (isNaN(d.getTime())) return;
             items.push({
