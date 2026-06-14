@@ -539,3 +539,13 @@ body {
     .cards-row.metrics { grid-template-columns: 1fr; }
     .modal-sale-header { flex-direction: column; text-align: center; }
 }
+/* Entry badge */
+.entry-badge {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; margin-bottom: 4px;
+    background: #f0fff4; border-left: 3px solid #38a169;
+    border-radius: 6px; font-size: 12px;
+}
+.entry-badge-nome { font-weight: 600; color: var(--text); flex: 1; }
+.entry-badge-time { font-weight: 700; color: #38a169; }
+.entry-badge-cpf { font-size: 11px; color: var(--text-muted); background: #e2e8f0; padding: 1px 6px; border-radius: 10px; }

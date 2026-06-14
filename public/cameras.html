@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E4 Câmeras</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="/cameras.css">
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="nav-inner">
+            <a href="/" class="brand-logo" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:8px;">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#fff"/><path d="M7 14L11 18L21 8" stroke="#32bcad" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>E4 Câmeras</span>
+            </a>
+            <div class="nav-links">
+                <a href="http://localhost:3000" class="nav-link"><i class="material-icons" style="font-size:16px;vertical-align:middle;">dashboard</i> Dashboard</a>
+                <a href="http://localhost:3000/conciliacao" class="nav-link"><i class="material-icons" style="font-size:16px;vertical-align:middle;">compare_arrows</i> Conciliação</a>
+                <a href="http://localhost:3000/scanner" class="nav-link"><i class="material-icons" style="font-size:16px;vertical-align:middle;">qr_code_scanner</i> Leitor</a>
+                <a href="http://localhost:3002" class="nav-link active"><i class="material-icons" style="font-size:16px;vertical-align:middle;">videocam</i> Câmeras</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-body">
+        <div class="cameras-top-bar">
+            <div class="cameras-status" id="cam-status">
+                <span class="status-dot offline" id="status-dot"></span>
+                <span id="status-text">Conectando...</span>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <button class="btn-action btn-green" onclick="abrirApp()">
+                    <i class="material-icons" style="font-size:16px;">desktop_windows</i> Abrir EZVIZ HD
+                </button>
+                <a href="https://isa.ezvizlife.com" target="_blank" class="btn-action btn-black" style="text-decoration:none;">
+                    <i class="material-icons" style="font-size:16px;">open_in_new</i> Portal eZviz
+                </a>
+                <button class="btn-action btn-green" onclick="loadCameras()">
+                    <i class="material-icons" style="font-size:16px;">refresh</i> Atualizar
+                </button>
+            </div>
+        </div>
+
+        <div class="cameras-grid" id="cameras-grid">
+            <div class="empty-state">Conectando às câmeras...</div>
+        </div>
+
+        <div class="search-section">
+            <h2><i class="material-icons" style="font-size:20px;vertical-align:middle;margin-right:6px;">search</i> Buscar Gravações na Nuvem</h2>
+            <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">Lista gravações salvas na nuvem eZviz.</p>
+            <div class="search-form">
+                <div class="search-row">
+                    <div class="filter-group">
+                        <label>Câmera</label>
+                        <select id="search-serial">
+                            <option value="">Selecione uma câmera...</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Data</label>
+                        <input type="date" id="search-data">
+                    </div>
+                    <div class="filter-group">
+                        <label>Início</label>
+                        <input type="time" id="search-inicio" step="1">
+                    </div>
+                    <div class="filter-group">
+                        <label>Fim</label>
+                        <input type="time" id="search-fim" step="1">
+                    </div>
+                    <button class="btn-action btn-green" onclick="buscarGravacoes()">
+                        <i class="material-icons" style="font-size:16px;">search</i> Buscar
+                    </button>
+                </div>
+                <div class="quick-buttons">
+                    <button class="btn-action btn-black btn-sm" onclick="setTimeRange(30)">Últimos 30min</button>
+                    <button class="btn-action btn-black btn-sm" onclick="setTimeRange(60)">Última 1h</button>
+                    <button class="btn-action btn-black btn-sm" onclick="setTimeRange(120)">Últimas 2h</button>
+                    <button class="btn-action btn-black btn-sm" onclick="setTimeRange(180)">Últimas 3h</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="recordings-section" id="recordings-section" style="display:none;">
+            <div class="rec-header">
+                <h2><i class="material-icons" style="font-size:20px;vertical-align:middle;margin-right:6px;">video_library</i> Gravações Encontradas</h2>
+                <span id="rec-count"></span>
+            </div>
+            <div class="recordings-list" id="recordings-list"></div>
+        </div>
+
+        <div class="player-section" id="player-section" style="display:none;">
+            <div class="player-header">
+                <h2 id="live-title"><i class="material-icons" style="font-size:20px;vertical-align:middle;margin-right:6px;">videocam</i> Player</h2>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="text" id="live-code" placeholder="Código verificação (se necessário)" style="padding:4px 8px;font-size:11px;border:1px solid #e2e8f0;border-radius:4px;width:180px;">
+                    <input type="hidden" id="live-serial">
+                    <button class="btn-action btn-green btn-sm" onclick="toggleLive(document.getElementById('live-serial').value)">Reconectar</button>
+                    <button class="btn-action btn-black btn-sm" onclick="stopLive()"><i class="material-icons" style="font-size:14px;">close</i></button>
+                </div>
+            </div>
+            <div class="player-wrapper">
+                <video id="video-player" controls playsinline autoplay muted style="width:100%;max-height:500px;background:#000;border-radius:8px;"></video>
+                <div id="player-placeholder" class="snapshot-placeholder" style="height:300px;">
+                    <i class="material-icons" style="font-size:48px;">videocam</i>
+                    <p style="margin-top:12px;font-size:13px;">Clique em "Ao vivo" em uma câmera para iniciar</p>
+                </div>
+            </div>
+            <p style="font-size:10px;color:var(--text-muted);margin-top:8px;">O streaming RTSP direto só funciona quando o servidor está na mesma rede local (192.168.x.x) das câmeras.</p>
+        </div>
+
+        <div class="info-section">
+            <h2><i class="material-icons" style="font-size:20px;vertical-align:middle;margin-right:6px;">info</i> Como usar</h2>
+            <div class="info-cards">
+                <div class="info-card">
+                    <i class="material-icons">videocam</i>
+                    <div>
+                        <strong>Ao vivo (RTSP local)</strong>
+                        <p>Clique em "Ao vivo" na câmera. O servidor acessa a câmera via RTSP e converte pra HLS. Só funciona na mesma rede local.</p>
+                    </div>
+                </div>
+                <div class="info-card">
+                    <i class="material-icons">search</i>
+                    <div>
+                        <strong>Buscar na nuvem</strong>
+                        <p>Selecione câmera, data e horário. Lista gravações de movimento/evento salvas na nuvem eZviz.</p>
+                    </div>
+                </div>
+                <div class="info-card">
+                    <i class="material-icons">open_in_new</i>
+                    <div>
+                        <strong>Portal eZviz</strong>
+                        <p>Para assistir gravações do cartão SD, abra o portal eZviz. O link está no topo da página e em cada gravação.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/cameras.js"></script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NVR eZviz</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root { --bg:#0f172a; --card:#1e293b; --text:#e2e8f0; --text2:#94a3b8; --border:#334155; --green:#22c55e; --red:#ef4444; --blue:#3b82f6; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Montserrat',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+        .top { background:#0f172a; border-bottom:1px solid var(--border); padding:12px 20px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; }
+        .top h1 { font-size:16px; display:flex; align-items:center; gap:8px; }
+        .top-actions { display:flex; gap:8px; align-items:center; }
+        .badge { font-size:11px; padding:4px 10px; border-radius:20px; font-weight:600; }
+        .badge-on { background:#14532d; color:#86efac; }
+        .badge-off { background:#450a0a; color:#fca5a5; }
+        .badge-gb { background:#1e3a5f; color:#93c5fd; }
+
+        .container { max-width:1300px; margin:0 auto; padding:16px; }
+
+        .setup-box { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px; margin-bottom:16px; }
+        .setup-box h2 { font-size:14px; margin-bottom:10px; }
+        .setup-row { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; }
+        .setup-row input { padding:8px 12px; border:1px solid var(--border); border-radius:6px; background:#0f172a; color:var(--text); font-family:inherit; font-size:12px; width:180px; }
+        .setup-row input:focus { outline:none; border-color:var(--blue); }
+
+        .cam-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:12px; margin-bottom:16px; }
+        .cam-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px; }
+        .cam-card.recording { border-color:#22c55e; box-shadow:0 0 12px rgba(34,197,94,0.1); }
+        .cam-name { font-weight:600; font-size:13px; margin-bottom:4px; }
+        .cam-ip { font-size:10px; color:var(--text2); font-family:monospace; margin-bottom:8px; }
+        .cam-status { font-size:11px; margin-bottom:8px; display:flex; align-items:center; gap:5px; }
+        .cam-card input { width:100%; padding:6px 10px; border:1px solid var(--border); border-radius:5px; background:#0f172a; color:var(--text); font-family:monospace; font-size:11px; margin-bottom:6px; }
+        .cam-card button { width:100%; padding:7px; border:none; border-radius:5px; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; }
+
+        .btn { display:inline-flex; align-items:center; gap:4px; padding:8px 14px; border-radius:6px; font-size:12px; font-weight:600; border:none; cursor:pointer; font-family:inherit; }
+        .btn-green { background:#166534; color:#86efac; }
+        .btn-green:hover { background:#14532d; }
+        .btn-red { background:#991b1b; color:#fca5a5; }
+        .btn-red:hover { background:#7f1d1d; }
+        .btn-blue { background:#1e40af; color:#93c5fd; }
+        .btn-blue:hover { background:#1e3a8a; }
+        .btn-sm { padding:5px 10px; font-size:10px; }
+
+        .search-bar { display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; margin-bottom:12px; }
+        .search-bar select, .search-bar input { padding:8px 12px; border:1px solid var(--border); border-radius:6px; background:#0f172a; color:var(--text); font-family:inherit; font-size:12px; }
+        .search-bar select:focus, .search-bar input:focus { outline:none; border-color:var(--blue); }
+
+        .rec-list { display:flex; flex-direction:column; gap:6px; }
+        .rec-card { display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px 14px; }
+        .rec-card:hover { background:#1e3a5f; }
+        .rec-icon { width:36px; height:36px; background:#166534; border-radius:6px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .rec-icon i { color:#86efac; font-size:20px; }
+        .rec-info { flex:1; min-width:0; }
+        .rec-time { font-size:12px; font-weight:600; }
+        .rec-meta { font-size:10px; color:var(--text2); }
+        .rec-actions { display:flex; gap:4px; flex-shrink:0; }
+
+        .player-box { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px; margin-top:12px; display:none; }
+        .player-box video { width:100%; max-height:400px; border-radius:6px; background:#000; }
+        .player-actions { display:flex; gap:8px; margin-top:8px; align-items:center; }
+
+        .empty { text-align:center; padding:30px; color:var(--text2); font-size:12px; }
+        .spinner { width:20px; height:20px; border:2px solid var(--border); border-top-color:var(--green); border-radius:50%; animation:spin 0.6s linear infinite; display:inline-block; margin-right:6px; }
+        @keyframes spin { to{transform:rotate(360deg);} }
+
+        .disk-bar { height:6px; background:var(--border); border-radius:3px; margin-top:6px; overflow:hidden; }
+        .disk-fill { height:100%; border-radius:3px; transition:width 1s; }
+    </style>
+</head>
+<body>
+    <div class="top">
+        <h1><i class="material-icons">dvr</i> NVR eZviz</h1>
+        <div class="top-actions">
+            <span class="badge" id="disk-badge" style="background:#1e3a5f;color:#93c5fd;">0 GB / 50 GB</span>
+            <span class="badge badge-off" id="rec-badge">Parado</span>
+            <button class="btn btn-blue" onclick="loadStatus()"><i class="material-icons" style="font-size:14px;">refresh</i></button>
+            <a href="http://localhost:3000" class="btn" style="background:#334155;color:#e2e8f0;text-decoration:none;"><i class="material-icons" style="font-size:14px;">dashboard</i> Dashboard</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="setup-box" id="setup-box">
+            <h2><i class="material-icons" style="font-size:14px;vertical-align:middle;">settings</i> Configurar Gravação</h2>
+            <p style="font-size:10px;color:var(--text2);margin-bottom:8px;">Código de verificação da câmera (6 dígitos na etiqueta). Use o mesmo código pra todas ou configure individualmente.</p>
+            <div class="setup-row">
+                <input type="text" id="global-code" placeholder="Código de verificação" maxlength="6" style="text-transform:uppercase;">
+                <button class="btn btn-green" onclick="iniciarTodas()"><i class="material-icons" style="font-size:14px;">play_arrow</i> Iniciar Todas</button>
+                <button class="btn btn-red" onclick="pararTodas()"><i class="material-icons" style="font-size:14px;">stop</i> Parar Todas</button>
+                <span style="font-size:10px;color:var(--text2);">Limite: 50 GB | Apaga gravações > 7 dias</span>
+            </div>
+        </div>
+
+        <div class="cam-grid" id="cam-grid"><div class="empty">Carregando...</div></div>
+
+        <div style="margin-bottom:16px;">
+            <h2 style="font-size:14px;margin-bottom:10px;"><i class="material-icons" style="font-size:16px;vertical-align:middle;">video_library</i> Buscar Gravações</h2>
+            <div class="search-bar">
+                <select id="search-serial" onchange="loadDatas()"><option value="">Escolha câmera...</option></select>
+                <select id="search-data" onchange="loadGravacoes()"><option value="">Escolha data...</option></select>
+                <button class="btn btn-blue btn-sm" onclick="loadGravacoes()"><i class="material-icons" style="font-size:14px;">search</i> Buscar</button>
+                <button class="btn btn-sm" style="background:#991b1b;color:#fca5a5;" onclick="limparAntigas()"><i class="material-icons" style="font-size:14px;">delete</i> Limpar > 7 dias</button>
+            </div>
+        </div>
+
+        <div class="rec-list" id="rec-list"><div class="empty">Selecione câmera e data</div></div>
+
+        <div class="player-box" id="player-box">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span style="font-size:13px;font-weight:600;" id="player-title">Player</span>
+                <button class="btn btn-red btn-sm" onclick="closePlayer()"><i class="material-icons" style="font-size:14px;">close</i></button>
+            </div>
+            <video id="player" controls playsinline></video>
+            <div class="player-actions">
+                <a id="download-link" class="btn btn-green" download><i class="material-icons" style="font-size:14px;">download</i> Baixar</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="/nvr.js"></script>
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelbras IA - Entrada</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root { --bg:#0f172a; --card:#1e293b; --text:#e2e8f0; --text2:#94a3b8; --border:#334155; --green:#22c55e; --red:#ef4444; --blue:#3b82f6; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Montserrat',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+        .top { background:#0f172a; border-bottom:1px solid var(--border); padding:12px 20px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; }
+        .top h1 { font-size:15px; display:flex; align-items:center; gap:8px; }
+        .top-stats { display:flex; gap:16px; align-items:center; font-size:12px; }
+        .stat { text-align:center; }
+        .stat-val { font-size:22px; font-weight:700; }
+        .stat-lbl { font-size:9px; color:var(--text2); text-transform:uppercase; }
+        .stat-val.green { color:var(--green); }
+        .stat-val.blue { color:var(--blue); }
+        .live-dot { width:8px; height:8px; background:var(--green); border-radius:50%; display:inline-block; animation:pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        .container { max-width:1000px; margin:0 auto; padding:16px; }
+
+        .entry-card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px; display:flex; gap:14px; align-items:center; transition:background 0.2s; margin-bottom:6px; }
+        .entry-card:hover { background:#1e3a5f; }
+        .entry-thumb { width:140px; height:90px; border-radius:6px; overflow:hidden; flex-shrink:0; background:#0f172a; cursor:pointer; position:relative; }
+        .entry-thumb img { width:100%; height:100%; object-fit:cover; }
+        .entry-thumb .play-overlay { position:absolute; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity 0.2s; }
+        .entry-thumb:hover .play-overlay { opacity:1; }
+        .entry-thumb .play-overlay i { font-size:32px; color:#fff; }
+        .entry-info { flex:1; min-width:0; }
+        .entry-hora { font-size:20px; font-weight:700; }
+        .entry-data { font-size:11px; color:var(--text2); }
+        .entry-meta { display:flex; gap:8px; margin-top:4px; align-items:center; }
+        .badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:600; }
+        .badge-on { background:#14532d; color:#86efac; }
+        .badge-mid { background:#713f12; color:#fde68a; }
+        .badge-off { background:#450a0a; color:#fca5a5; }
+        .entry-actions { display:flex; gap:6px; flex-shrink:0; }
+
+        .btn { display:inline-flex; align-items:center; gap:4px; padding:8px 14px; border-radius:6px; font-size:11px; font-weight:600; border:none; cursor:pointer; font-family:inherit; text-decoration:none; }
+        .btn-green { background:#166534; color:#86efac; }
+        .btn-green:hover { background:#14532d; }
+        .btn-blue { background:#1e40af; color:#93c5fd; }
+        .btn-blue:hover { background:#1e3a8a; }
+
+        .player-box { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px; margin-top:12px; display:none; }
+        .player-box video { width:100%; max-height:400px; border-radius:6px; background:#000; }
+        .player-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+
+        .empty { text-align:center; padding:40px; color:var(--text2); }
+    </style>
+</head>
+<body>
+    <div class="top">
+        <h1>🤖 Intelbras IA - Entrada</h1>
+        <div class="top-stats">
+            <div class="stat"><div class="stat-val green" id="total-hoje">0</div><div class="stat-lbl">Entradas Hoje</div></div>
+            <div class="stat"><div class="stat-val blue" id="total-semana">0</div><div class="stat-lbl">Total</div></div>
+            <span style="font-size:11px;display:flex;align-items:center;gap:6px;"><span class="live-dot"></span> <span id="sys-status">IA ativa</span></span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="timeline"><div class="empty">🔍 Aguardando entradas...<br><small>Passe na frente da câmera</small></div></div>
+
+        <div class="player-box" id="player-box">
+            <div class="player-header">
+                <span id="player-title" style="font-weight:600;font-size:13px;">▶ Clique em Assistir</span>
+                <button class="btn btn-blue" onclick="closePlayer()" style="padding:4px 10px;font-size:10px;">✕</button>
+            </div>
+            <video id="player" controls playsinline></video>
+            <div style="margin-top:6px;">
+                <a id="download-link" class="btn btn-green" download>⬇ Baixar clipe</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var allEntradas = [];
+
+        function render() {
+            var el = document.getElementById('timeline');
+            if (allEntradas.length === 0) {
+                el.innerHTML = '<div class="empty">🔍 Nenhuma entrada ainda<br><small style="color:var(--text2)">Passe na frente da camera Intelbras</small></div>';
+                return;
+            }
+            var hoje = new Date().toISOString().substring(0,10);
+            document.getElementById('total-hoje').textContent = allEntradas.filter(function(e){return e.data===hoje}).length;
+            document.getElementById('total-semana').textContent = allEntradas.length;
+
+            var html = '';
+            allEntradas.forEach(function(e){
+                var parts = e.data.split('-');
+                var dt = parts[2]+'/'+parts[1];
+                var confClass = e.confianca >= 80 ? 'badge-on' : e.confianca >= 50 ? 'badge-mid' : 'badge-off';
+                var posTag = e.posicao ? '<span style="font-size:10px;color:var(--text2);">📍 '+e.posicao+'</span>' : '';
+                html += '<div class="entry-card">'+
+                    '<div class="entry-thumb" onclick="play(\''+e.id+'\')">'+
+                        '<img src="'+e.foto+'" onerror="this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%2290%22><rect fill=%22%23334155%22 width=%22140%22 height=%2290%22/><text fill=%22%2394a3b8%22 x=%2270%22 y=%2250%22 text-anchor=%22middle%22 font-size=%2214%22>📷</text></svg>\'">'+
+                        '<div class="play-overlay"><i class="material-icons">play_circle</i></div>'+
+                    '</div>'+
+                    '<div class="entry-info">'+
+                        '<div class="entry-hora">🕐 '+e.hora+'</div>'+
+                        '<div class="entry-data">📅 '+dt+'</div>'+
+                        '<div class="entry-meta">'+
+                            '<span class="badge '+confClass+'">🎯 '+e.confianca+'% IA</span>'+
+                            posTag+
+                            (e.videoOk ? '<span style="font-size:10px;color:#22c55e;">✅ Vídeo pronto</span>' : '<span style="font-size:10px;color:#fbbf24;">⏳ Gravando...</span>')+
+                        '</div>'+
+                    '</div>'+
+                    '<div class="entry-actions">'+
+                        '<button class="btn btn-blue" onclick="play(\''+e.id+'\')">▶ Assistir</button>'+
+                        '<a href="/intelbras_gravacoes/'+e.video+'" class="btn btn-green" download>⬇</a>'+
+                    '</div>'+
+                '</div>';
+            });
+            el.innerHTML = html;
+        }
+
+        function play(id) {
+            var e = allEntradas.find(function(x){return x.id===id}); if(!e) return;
+            var v = document.getElementById('player');
+            var b = document.getElementById('player-box');
+            v.src = '/intelbras_gravacoes/'+e.video;
+            b.style.display='block';
+            document.getElementById('player-title').textContent = 'Entrada '+e.hora+' ('+e.confianca+'% IA)';
+            document.getElementById('download-link').href = '/intelbras_gravacoes/'+e.video;
+            document.getElementById('download-link').download = 'entrada_'+e.id+'.mp4';
+            v.play().catch(function(){});
+            b.scrollIntoView({behavior:'smooth'});
+        }
+
+        function closePlayer() {
+            var v = document.getElementById('player');
+            v.pause(); v.src='';
+            document.getElementById('player-box').style.display='none';
+        }
+
+        async function load() {
+            try {
+                var r = await fetch('/api/entradas');
+                var d = await r.json();
+                if (d.ok) { allEntradas = d.entradas || []; }
+                document.getElementById('sys-status').textContent = d.ok ? 'IA ativa' : 'IA offline';
+            } catch(e) { document.getElementById('sys-status').textContent = 'Erro conexão'; }
+            render();
+        }
+
+        setInterval(load, 2500);
+        load();
+    </script>
+</body>
+</html>
