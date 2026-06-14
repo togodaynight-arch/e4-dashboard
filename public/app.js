@@ -155,35 +155,7 @@ function renderCupons() {
     var pageData = filteredSales.slice(start, start + PAGE_SIZE);
     if (pageData.length === 0) { listEl.innerHTML = '<div class="empty-state">Nenhuma venda encontrada</div>'; document.getElementById('pagination-row').style.display = 'none'; return; }
     var html = '';
-    var entradasUsadas = {};
     pageData.forEach(function(s) {
-        // Busca entrada correspondente (até 5 min antes, mesma loja)
-        if (logPortaAtivo && logPortaData.length > 0) {
-            var saleTime = new Date(s.dataEfetivacao).getTime();
-            var saleLoja = nomeLoja(s);
-            var melhor = null;
-            logPortaData.forEach(function(e) {
-                if (entradasUsadas[e.id]) return;
-                var entryTime = new Date(e.data).getTime();
-                var diff = (saleTime - entryTime) / 60000;
-                if (diff >= 0 && diff <= 5 && e.unidade === saleLoja) {
-                    if (!melhor || diff < (saleTime - new Date(melhor.data).getTime()) / 60000) {
-                        melhor = e;
-                    }
-                }
-            });
-            if (melhor) {
-                entradasUsadas[melhor.id] = true;
-                var ed = new Date(melhor.data);
-                html += '<div class="entry-badge">' +
-                    '<i class="material-icons" style="font-size:14px;color:#38a169;">login</i>' +
-                    '<span class="entry-badge-nome">' + (melhor.cliente || 'Entrada') + '</span>' +
-                    '<span class="entry-badge-loja">' + (melhor.unidade || '') + '</span>' +
-                    '<span class="entry-badge-time">' + String(ed.getHours()).padStart(2,'0') + ':' + String(ed.getMinutes()).padStart(2,'0') + '</span>' +
-                    '</div>';
-            }
-        }
-
         var produtos = (s.produtos || []).filter(function(p){return !p.cancelado}).map(function(p){return p.descricaoReduzida || p.descricaoComercial}).join(', ');
         var payMap = { 'Cartão': 0, 'Carteira': 0, 'Picpay': 0, 'Pix': 0 };
         (s.finalizadoras || []).forEach(function(f) { var type = classificarPagamento(f); if(type==='pix') payMap['Pix']+=f.valorPago||0; else if(type==='picpay') payMap['Picpay']+=f.valorPago||0; else if(type==='cartao') payMap['Cartão']+=f.valorPago||0; else payMap['Cartão']+=f.valorPago||0; });
@@ -195,21 +167,6 @@ function renderCupons() {
         var userName = 'Totem '+(nomeLoja(s)||''); if(s.pdvId) userName+=' '+s.pdvCodigo;
         html+='<div class="sale-card" onclick="openDetail(\''+s.id+'\')"><div class="sale-card-inner"><div class="sale-avatar"><i class="material-icons">person</i></div><div class="sale-left"><p class="sale-date">'+formatarData(s.dataEfetivacao)+'</p><p class="sale-meta">Usuário: '+userName+'</p><p class="sale-meta">Loja: '+(nomeLoja(s)||'--')+'</p><p class="sale-meta">#'+s.cupom+'</p></div><div class="sale-center"><p class="sale-total-line"><b>Total: '+formatarMoeda(s.valorLiquido)+'</b></p>'+paymentLines+'</div><div class="sale-right"><table class="sale-products-table"><thead><tr><th>Produto</th><th>Valor</th><th>Qtd</th></tr></thead><tbody>'+productRows+'</tbody></table></div></div></div>';
     });
-    // Entradas sem venda correspondente
-    if (logPortaAtivo && logPortaData.length > 0) {
-        logPortaData.forEach(function(e) {
-            if (!entradasUsadas[e.id]) {
-                var ed = new Date(e.data);
-                html += '<div class="entry-badge sem-compra">' +
-                    '<i class="material-icons" style="font-size:14px;color:#e53e3e;">login</i>' +
-                    '<span class="entry-badge-nome">' + (e.cliente || 'Entrada') + '</span>' +
-                    '<span class="entry-badge-loja">' + (e.unidade || '') + '</span>' +
-                    '<span class="entry-badge-time">' + String(ed.getHours()).padStart(2,'0') + ':' + String(ed.getMinutes()).padStart(2,'0') + '</span>' +
-                    '<span class="entry-badge-sem">Sem compra</span>' +
-                    '</div>';
-            }
-        });
-    }
     listEl.innerHTML = html;
     var totalPages = Math.ceil(filteredSales.length / PAGE_SIZE);
     document.getElementById('cupons-info').textContent = 'Mostrando '+(start+1)+'-'+Math.min(start+PAGE_SIZE, filteredSales.length)+' de '+filteredSales.length.toLocaleString('pt-BR');
@@ -301,38 +258,6 @@ function exportXLSX() {
     var ws = XLSX.utils.json_to_sheet(vendasRows);
     XLSX.utils.book_append_sheet(wb, ws, 'Vendas');
     XLSX.writeFile(wb, 'vendas_' + dataLocal() + '.xlsx');
-}
-
-var logPortaData = [];
-var logPortaAtivo = false;
-var logPortaTimer = null;
-
-function toggleLogPorta() {
-    logPortaAtivo = !logPortaAtivo;
-    var btn = document.getElementById('btn-logporta');
-    if (logPortaAtivo) {
-        btn.innerHTML = '<i class="material-icons" style="font-size:14px;">visibility_off</i> Entradas ON';
-        btn.style.background = '#38a169';
-        carregarLogPorta();
-        logPortaTimer = setInterval(carregarLogPorta, 30000);
-    } else {
-        btn.innerHTML = '<i class="material-icons" style="font-size:14px;">visibility</i> Entradas';
-        btn.style.background = '';
-        if (logPortaTimer) clearInterval(logPortaTimer);
-        logPortaData = [];
-        renderCupons();
-    }
-}
-
-function carregarLogPorta() {
-    var range = getDateRange();
-    var url = '/ocorrencias?inicio=' + range.inicio.split('-').reverse().join('/') + '&fim=' + range.fim.split('-').reverse().join('/');
-    fetch(url).then(function(r){return r.json()}).then(function(d){
-        if (d.ok) {
-            logPortaData = d.ocorrencias.filter(function(o){ return o.codigo === '41' || o.codigo === '42'; });
-            renderCupons();
-        }
-    }).catch(function(){});
 }
 
 document.addEventListener('DOMContentLoaded', function() {

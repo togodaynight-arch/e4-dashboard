@@ -536,7 +536,6 @@ body {
 }
 
 @media (max-width: 600px) {
-    .cards-row.metrics { grid-template-columns: 1fr; }
     .modal-sale-header { flex-direction: column; text-align: center; }
 }
 /* Entry badge */
