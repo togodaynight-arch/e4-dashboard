@@ -665,6 +665,7 @@ function renderClientes() {
 
 function renderVerificacao() {
     var vendas = getVendasFiltered();
+    var lojaFiltro = document.getElementById('filtro-loja').value;
     var el = document.getElementById('verificacao-list');
     var info = document.getElementById('verificacao-info');
 
@@ -681,6 +682,7 @@ function renderVerificacao() {
     var countSemVenda = 0, countCancelado = 0;
 
     logs.forEach(function(log) {
+        if (lojaFiltro && log.unidade !== lojaFiltro) return;
         var entryTime = new Date(log.data).getTime();
         var temVenda = vendas.some(function(v) {
             var vTime = new Date(v.dataEfetivacao).getTime();
@@ -735,14 +737,16 @@ function renderVerificacao() {
 
 function renderTimeline() {
     var vendas = getVendasFiltered();
+    var lojaFiltro = document.getElementById('filtro-loja').value;
     var el = document.getElementById('timeline-list');
     var info = document.getElementById('timeline-info');
 
     var items = [];
 
-    // Log-porta entries
+    // Log-porta entries - filtrar por loja
     (monitorAllData || []).forEach(function(o) {
         if (o.codigo === '41' || o.codigo === '42') {
+            if (lojaFiltro && o.unidade !== lojaFiltro) return;
             var d = new Date(o.data);
             if (isNaN(d.getTime())) return;
             items.push({
@@ -798,6 +802,7 @@ function renderTimeline() {
     });
     (monitorAllData || []).forEach(function(o) {
         if (checkedOcorr.indexOf(o.codigo) !== -1) {
+            if (lojaFiltro && o.unidade !== lojaFiltro) return;
             var d = new Date(o.data);
             if (isNaN(d.getTime())) return;
             items.push({
