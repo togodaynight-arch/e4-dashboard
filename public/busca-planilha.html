@@ -54,6 +54,11 @@
                 <p>Arraste ou clique — .xlsx, .xls, .csv</p>
                 <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleUpload(event)">
             </div>
+            <div style="text-align:center;margin-bottom:12px;">
+                <button class="btn-buscar" onclick="carregarBasePadrao()" id="btn-padrao" style="background:#718096;font-size:11px;padding:6px 14px;height:auto;">
+                    <i class="material-icons" style="font-size:14px;">auto_awesome</i> Carregar base padrão (lucratividade)
+                </button>
+            </div>
             <div class="search-row">
                 <input type="text" id="search-input" class="search-input" placeholder="Digite o EAN ou nome do produto..." onkeydown="if(event.key==='Enter')buscar()">
                 <button class="btn-buscar" onclick="buscar()"><i class="material-icons" style="font-size:16px;">search</i> Buscar</button>

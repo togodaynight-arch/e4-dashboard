@@ -2,6 +2,34 @@ var planilhaData = [];
 var colunas = [];
 var fileName = '';
 
+function carregarBasePadrao() {
+    var btn = document.getElementById('btn-padrao');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="material-icons" style="font-size:14px;">hourglass_empty</i> Carregando...';
+
+    fetch('/produtos_base.csv')
+        .then(function(r) { return r.text(); })
+        .then(function(csv) {
+            var wb = XLSX.read(csv, { type: 'string', raw: true });
+            var sheet = wb.Sheets[wb.SheetNames[0]];
+            var json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+            planilhaData = json;
+            colunas = Object.keys(json[0]);
+            fileName = 'lucratividade_trans_bus.csv';
+            document.getElementById('upload-label').innerHTML = '<i class="material-icons" style="font-size:14px;color:#38a169;">check_circle</i> Base padrão carregada (' + json.length.toLocaleString('pt-BR') + ' produtos)';
+            document.getElementById('info-rows').textContent = json.length.toLocaleString('pt-BR') + ' produtos | lucratividade_trans_bus.csv';
+            document.getElementById('info-cols').textContent = colunas.length + ' colunas: ' + colunas.join(', ');
+            document.getElementById('results').innerHTML = '<div class="no-data" style="color:#38a169;"><i class="material-icons" style="font-size:40px;display:block;margin-bottom:8px;">check_circle</i>' + json.length.toLocaleString('pt-BR') + ' produtos carregados! Digite um EAN ou nome para buscar.</div>';
+            btn.innerHTML = '<i class="material-icons" style="font-size:14px;">check_circle</i> Base carregada!';
+            btn.style.background = '#38a169';
+            btn.disabled = false;
+        })
+        .catch(function() {
+            btn.innerHTML = '<i class="material-icons" style="font-size:14px;">error</i> Erro ao carregar';
+            btn.disabled = false;
+        });
+}
+
 function handleUpload(event) {
     var file = event.target.files[0];
     if (!file) return;
@@ -64,7 +92,16 @@ function buscar() {
     });
 
     if (resultados.length === 0) {
-        el.innerHTML = '<div class="no-data"><i class="material-icons" style="font-size:40px;display:block;margin-bottom:8px;color:#e53e3e;">search_off</i>Nenhum produto encontrado para "<b>' + termo + '</b>"</div>';
+        var eanLimpo = termo.replace(/[^0-9]/g, '');
+        var googleUrl = 'https://www.google.com/search?q=' + encodeURIComponent(termo);
+        var bullUrl = 'https://www.bullssoft.com.br/busca?q=' + encodeURIComponent(termo);
+        el.innerHTML = '<div class="result-card notfound">' +
+            '<h3>Não encontrado na planilha</h3>' +
+            '<p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">Termo buscado: <b>' + termo + '</b></p>' +
+            '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+            '<a href="' + googleUrl + '" target="_blank" class="btn-buscar" style="text-decoration:none;height:36px;font-size:12px;padding:0 14px;background:#1a73e8;"><i class="material-icons" style="font-size:14px;">search</i> Buscar no Google</a>' +
+            '<a href="' + bullUrl + '" target="_blank" class="btn-buscar" style="text-decoration:none;height:36px;font-size:12px;padding:0 14px;background:#d69e2e;"><i class="material-icons" style="font-size:14px;">inventory_2</i> Buscar no Bulls Soft</a>' +
+            '</div></div>';
         return;
     }
 
