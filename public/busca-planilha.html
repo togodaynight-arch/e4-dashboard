@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busca Produtos - Planilha</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .planilha-body { max-width: 1200px; margin: 0 auto; padding: 16px 14px 40px; }
+        .upload-card { background: var(--card-bg); border-radius: 12px; box-shadow: var(--card-shadow); padding: 20px; margin-bottom: 16px; }
+        .upload-zone { border: 2px dashed #d9b759; border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; transition: 0.2s; background: #fffbeb; margin-bottom: 12px; }
+        .upload-zone:hover { background: #fef3c7; border-color: #b8962e; }
+        .upload-zone.dragover { background: #fef3c7; border-color: #38a169; }
+        .upload-zone i { font-size: 40px; color: #d9b759; margin-bottom: 8px; }
+        .upload-zone strong { display: block; font-size: 14px; color: var(--text); }
+        .upload-zone p { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+        .search-row { display: flex; gap: 10px; align-items: center; }
+        .search-input { flex: 1; height: 44px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0 14px; font-size: 14px; font-family: 'Montserrat',sans-serif; outline: none; }
+        .search-input:focus { border-color: #d9b759; }
+        .btn-buscar { height: 44px; padding: 0 20px; background: #d9b759; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Montserrat',sans-serif; display: flex; align-items: center; gap: 6px; }
+        .btn-buscar:hover { background: #c4a343; }
+        .info-bar { display: flex; justify-content: space-between; padding: 8px 0; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+        .result-card { background: var(--card-bg); border-radius: 10px; box-shadow: var(--card-shadow); padding: 16px 20px; margin-bottom: 10px; border-left: 3px solid #48bb78; }
+        .result-card.notfound { border-left-color: #e53e3e; background: #fff5f5; }
+        .result-card h3 { font-size: 15px; font-weight: 700; margin: 0 0 8px; }
+        .result-card.notfound h3 { color: #c53030; }
+        .result-table { width: 100%; font-size: 12px; }
+        .result-table td { padding: 3px 8px; vertical-align: top; }
+        .result-table td:first-child { font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+        .result-table td:last-child { color: var(--text); }
+        .result-ean { font-size: 11px; color: var(--text-muted); }
+        .no-data { text-align: center; padding: 40px; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="nav-inner">
+            <a class="brand-logo" href="/">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#fff"/><path d="M7 14L11 18L21 8" stroke="#d9b759" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>Busca por Planilha</span>
+            </a>
+            <a class="nav-link" href="/"><i class="material-icons">dashboard</i> Dashboard</a>
+        </div>
+    </nav>
+
+    <div class="planilha-body">
+        <div class="upload-card">
+            <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+                <i class="material-icons">cloud_upload</i>
+                <strong id="upload-label">Importar Planilha de Produtos</strong>
+                <p>Arraste ou clique — .xlsx, .xls, .csv</p>
+                <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleUpload(event)">
+            </div>
+            <div class="search-row">
+                <input type="text" id="search-input" class="search-input" placeholder="Digite o EAN ou nome do produto..." onkeydown="if(event.key==='Enter')buscar()">
+                <button class="btn-buscar" onclick="buscar()"><i class="material-icons" style="font-size:16px;">search</i> Buscar</button>
+            </div>
+            <div class="info-bar">
+                <span id="info-rows">Nenhuma planilha carregada</span>
+                <span id="info-cols"></span>
+            </div>
+        </div>
+        <div id="results"></div>
+    </div>
+
+    <script src="busca-planilha.js"></script>
+</body>
+</html>
