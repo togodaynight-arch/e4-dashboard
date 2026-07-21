@@ -8,3 +8,10 @@ services:
     envVars:
       - key: PORT
         value: "3000"
+
+  - type: web
+    name: controle-nf-boletos
+    runtime: node
+    buildCommand: ""
+    startCommand: node nf-controle/server.js
+    plan: free
