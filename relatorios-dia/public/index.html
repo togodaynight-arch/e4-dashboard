@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatórios Diários</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f1f5f9;--card:#fff;--text:#1e293b;--muted:#94a3b8;--accent:#2563eb;--green:#16a34a;--red:#dc2626;--amber:#d97706;--radius:12px;--shadow:0 1px 3px rgba(0,0,0,.08)}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.topbar{background:#1e293b;color:#fff;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar .logo{font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
+.page{max-width:1400px;margin:0 auto;padding:20px 16px 40px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
+.card h2{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:20px}
+.stat{padding:16px;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border-top:3px solid var(--accent)}
+.stat.green{border-top-color:var(--green)}
+.stat.amber{border-top-color:var(--amber)}
+.stat-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.stat-value{font-size:24px;font-weight:800;margin-top:4px}
+
+.controls{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px}
+.control-group{display:flex;flex-direction:column;gap:4px}
+.control-group label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase}
+.control-group input,.control-group select{padding:9px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;font-family:inherit;background:#fff}
+.btn{display:inline-flex;align-items:center;gap:6px;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s}
+.btn:hover{opacity:.9;transform:translateY(-1px)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-green{background:var(--green);color:#fff}
+.btn-whats{background:#25d366;color:#fff}
+.btn-whats:hover{background:#1da851}
+.btn-ghost{background:#f1f5f9;color:var(--text)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.spinner{border:2px solid #e2e8f0;border-top-color:var(--accent);border-radius:50%;width:20px;height:20px;animation:spin .7s linear infinite;display:none;margin:20px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:900px){.charts-grid{grid-template-columns:1fr}}
+.chart-box{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.chart-box h3{font-size:14px;font-weight:700;margin-bottom:12px}
+.chart-box canvas{max-height:280px}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+td{padding:10px 14px;border-bottom:1px solid #f1f5f9}
+tr:hover td{background:#f8fafc}
+.num{text-align:right}
+.tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.tag-green{background:#dcfce7;color:#166534}
+.tag-red{background:#fee2e2;color:#991b1b}
+.loading-text{text-align:center;padding:40px;color:var(--muted)}
+.toast{position:fixed;bottom:24px;right:24px;padding:14px 24px;border-radius:10px;color:#fff;font-weight:600;z-index:999;animation:slideUp .3s ease-out;display:none}
+.toast.success{background:#16a34a}
+.toast.error{background:#dc2626}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+#whatsapp-box{display:none;margin-top:16px;padding:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px}
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-state i{font-size:56px;display:block;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><i class="material-icons">assessment</i> Relatórios Diários</div>
+  <span style="font-size:13px;color:#94a3b8;">E4 Sistemas</span>
+</div>
+
+<div class="page">
+  <div class="controls">
+    <div class="control-group"><label>Data Início</label><input type="date" id="data-inicio"></div>
+    <div class="control-group"><label>Data Fim</label><input type="date" id="data-fim"></div>
+    <div class="control-group"><label>Loja</label><select id="filtro-loja"><option value="">Todas as lojas</option></select></div>
+    <button class="btn btn-primary" onclick="carregarTudo()" id="btn-carregar"><i class="material-icons" style="font-size:16px;">sync</i> Carregar Dados</button>
+    <button class="btn btn-whats" onclick="mostrarEnvioWhatsApp()" id="btn-whats" style="display:none"><i class="material-icons" style="font-size:16px;">send</i> Enviar Relatório</button>
+  </div>
+
+  <div class="card-row" id="resumo-cards"></div>
+
+  <div class="charts-grid">
+    <div class="chart-box"><h3>Vendas por Loja</h3><canvas id="chart-lojas"></canvas></div>
+    <div class="chart-box"><h3>Vendas por Hora</h3><canvas id="chart-horas"></canvas></div>
+  </div>
+
+  <div class="card">
+    <h2><i class="material-icons" style="font-size:20px;">trending_up</i> Ranking de Produtos Vendidos</h2>
+    <div style="overflow-x:auto"><table id="tab-produtos"><thead><tr><th>#</th><th>Produto</th><th class="num">Qtd Vendida</th><th class="num">Valor Total</th></tr></thead><tbody></tbody></table></div>
+  </div>
+
+  <div id="whatsapp-box">
+    <h3 style="margin-bottom:12px;"><i class="material-icons" style="font-size:18px;vertical-align:middle;">whatsapp</i> Enviar Resumo por WhatsApp</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div class="control-group"><label>Telefone (com DDD)</label><input type="text" id="whats-numero" placeholder="11999999999" style="width:180px"></div>
+      <button class="btn btn-whats" onclick="enviarWhatsApp()"><i class="material-icons" style="font-size:16px;">send</i> Enviar Agora</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('whatsapp-box').style.display='none'">Cancelar</button>
+    </div>
+    <div id="whatsapp-status" style="margin-top:10px;font-size:13px;"></div>
+  </div>
+
+  <div class="card">
+    <h2><i class="material-icons" style="font-size:20px;">shopping_cart</i> Sugestão de Compras</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Baseado na média de vendas dos últimos 7 dias. Quantidade sugerida = (média diária × 15 dias) para cobrir ~2 semanas.</p>
+    <div style="overflow-x:auto"><table id="tab-sugestoes"><thead><tr><th>#</th><th>Produto</th><th class="num">Vendas 7d</th><th class="num">Média/Dia</th><th class="num">Sugestão Compra</th></tr></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="spinner" id="spinner"></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+let vendasData = [];
+let produtosData = [];
+let lojasDisponiveis = [];
+let chartLojas = null, chartHoras = null;
+
+function formatarMoeda(v) { return 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function formatarData(d) { return new Date(d).toLocaleDateString('pt-BR'); }
+function dataLocal(d) { d = d || new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+async function init() {
+    const hoje = new Date();
+    document.getElementById('data-inicio').value = dataLocal(hoje);
+    document.getElementById('data-fim').value = dataLocal(hoje);
+}
+
+function mostrarToast(msg, tipo) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = 'toast ' + tipo; t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 4000);
+}
+
+async function e4post(path, body) {
+    const res = await fetch('/api/e4' + path, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+    });
+    return res.json();
+}
+
+async function carregarTudo() {
+    document.getElementById('spinner').style.display = 'block';
+    document.getElementById('btn-whats').style.display = 'none';
+    document.getElementById('whatsapp-box').style.display = 'none';
+
+    const inicio = document.getElementById('data-inicio').value;
+    const fim = document.getElementById('data-fim').value;
+    const loja = document.getElementById('filtro-loja').value;
+
+    if (!inicio || !fim) { mostrarToast('Selecione as datas','error'); document.getElementById('spinner').style.display='none'; return; }
+
+    try {
+        // Buscar todas as vendas do período
+        vendasData = [];
+        const firstPage = await e4post('/vendas/listagem?pagina=1&quantidade=100', {
+            unidade: loja ? parseInt(loja) : null,
+            dataInicial: inicio + ' 00:00:00',
+            dataFinal: fim + ' 23:59:59'
+        });
+
+        if (!firstPage.registros) {
+            mostrarToast('Erro ao buscar vendas: ' + (firstPage.mensagem || 'verifique a conexão'), 'error');
+            document.getElementById('spinner').style.display = 'none';
+            return;
+        }
+
+        vendasData = firstPage.registros.slice();
+        const totalPages = Math.ceil(firstPage.paginacao.qtdTotalRegistros / 100);
+
+        for (let i = 2; i <= totalPages; i++) {
+            const page = await e4post('/vendas/listagem?pagina=' + i + '&quantidade=100', {
+                unidade: loja ? parseInt(loja) : null,
+                dataInicial: inicio + ' 00:00:00',
+                dataFinal: fim + ' 23:59:59'
+            });
+            if (page.registros) vendasData = vendasData.concat(page.registros);
+        }
+
+        vendasData = vendasData.filter(v => !v.cancelado);
+
+        // Popular filtro de lojas
+        const lojasMap = {};
+        vendasData.forEach(v => {
+            const nome = v.unidadeNome || v.unidadeNombre || '';
+            if (nome) lojasMap[v.unidade] = nome;
+        });
+        const selLoja = document.getElementById('filtro-loja');
+        selLoja.innerHTML = '<option value="">Todas as lojas</option>';
+        Object.entries(lojasMap).forEach(([id, nome]) => {
+            selLoja.innerHTML += '<option value="' + id + '">' + nome + '</option>';
+        });
+
+        renderizarTudo();
+        document.getElementById('btn-whats').style.display = 'inline-flex';
+        mostrarToast(vendasData.length + ' vendas carregadas!', 'success');
+    } catch(e) {
+        mostrarToast('Erro: ' + e.message, 'error');
+    }
+    document.getElementById('spinner').style.display = 'none';
+}
+
+function renderizarTudo() {
+    renderResumo();
+    renderGraficos();
+    renderRanking();
+    renderSugestoes();
+}
+
+function renderResumo() {
+    const totalVendas = vendasData.length;
+    const totalValor = vendasData.reduce((s, v) => s + (v.valorLiquido || 0), 0);
+    const ticketMedio = totalVendas > 0 ? totalValor / totalVendas : 0;
+    const totalItens = vendasData.reduce((s, v) => s + (v.produtos || []).filter(p => !p.cancelado).reduce((ss, p) => ss + (p.quantidade || 1), 0), 0);
+
+    document.getElementById('resumo-cards').innerHTML =
+        '<div class="stat"><div class="stat-label">Total de Vendas</div><div class="stat-value">' + totalVendas.toLocaleString('pt-BR') + '</div></div>' +
+        '<div class="stat green"><div class="stat-label">Valor Total</div><div class="stat-value">' + formatarMoeda(totalValor) + '</div></div>' +
+        '<div class="stat amber"><div class="stat-label">Ticket Médio</div><div class="stat-value">' + formatarMoeda(ticketMedio) + '</div></div>' +
+        '<div class="stat"><div class="stat-label">Itens Vendidos</div><div class="stat-value">' + totalItens.toLocaleString('pt-BR') + '</div></div>';
+}
+
+function renderGraficos() {
+    // Vendas por loja
+    const porLoja = {};
+    vendasData.forEach(v => {
+        const nome = v.unidadeNome || v.unidadeNombre || 'Sem loja';
+        porLoja[nome] = (porLoja[nome] || 0) + (v.valorLiquido || 0);
+    });
+    const lojasSorted = Object.entries(porLoja).sort((a, b) => b[1] - a[1]);
+
+    const ctx1 = document.getElementById('chart-lojas').getContext('2d');
+    if (chartLojas) chartLojas.destroy();
+    chartLojas = new Chart(ctx1, {
+        type: 'bar',
+        data: { labels: lojasSorted.map(e => e[0]), datasets: [{ label: 'Valor (R$)', data: lojasSorted.map(e => e[1]), backgroundColor: '#2563eb', borderRadius: 6 }] },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    // Vendas por hora
+    const porHora = Array(24).fill(0);
+    vendasData.forEach(v => {
+        const d = new Date(v.dataEfetivacao);
+        if (!isNaN(d.getTime())) porHora[d.getHours()] += (v.valorLiquido || 0);
+    });
+    const ctx2 = document.getElementById('chart-horas').getContext('2d');
+    if (chartHoras) chartHoras.destroy();
+    chartHoras = new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels: Array.from({length:24},(_,i)=>String(i).padStart(2,'0')+'h'),
+            datasets: [{ label: 'Valor (R$)', data: porHora, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.1)', fill: true, tension: .4, pointRadius: 3 }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+}
+
+function renderRanking() {
+    const produtoMap = {};
+    vendasData.forEach(v => {
+        (v.produtos || []).filter(p => !p.cancelado).forEach(p => {
+            const nome = p.descricaoReduzida || p.descricaoComercial || '--';
+            if (!produtoMap[nome]) produtoMap[nome] = { qtd: 0, valor: 0 };
+            produtoMap[nome].qtd += (p.quantidade || 1);
+            produtoMap[nome].valor += (p.valorTotal || 0);
+        });
+    });
+    const sorted = Object.entries(produtoMap).sort((a, b) => b[1].qtd - a[1].qtd);
+
+    const tbody = document.querySelector('#tab-produtos tbody');
+    tbody.innerHTML = sorted.slice(0, 30).map(([nome, d], i) =>
+        '<tr><td>' + (i+1) + '</td><td>' + nome + '</td><td class="num">' + d.qtd.toLocaleString('pt-BR') + '</td><td class="num"><strong>' + formatarMoeda(d.valor) + '</strong></td></tr>'
+    ).join('');
+
+    if (sorted.length === 0) tbody.innerHTML = '<tr><td colspan="4" class="loading-text">Nenhum produto encontrado</td></tr>';
+}
+
+function renderSugestoes() {
+    const diasPeriodo = vendasData.length > 0 ? Math.max(1, Math.ceil((new Date(document.getElementById('data-fim').value) - new Date(document.getElementById('data-inicio').value)) / 86400000) + 1) : 7;
+    const produtoMap = {};
+    vendasData.forEach(v => {
+        (v.produtos || []).filter(p => !p.cancelado).forEach(p => {
+            const nome = p.descricaoReduzida || p.descricaoComercial || '--';
+            if (!produtoMap[nome]) produtoMap[nome] = 0;
+            produtoMap[nome] += (p.quantidade || 1);
+        });
+    });
+    const sorted = Object.entries(produtoMap).sort((a, b) => b[1] - a[1]);
+
+    const tbody = document.querySelector('#tab-sugestoes tbody');
+    tbody.innerHTML = sorted.slice(0, 30).map(([nome, total], i) => {
+        const mediaDia = total / diasPeriodo;
+        const sugestao = Math.max(10, Math.ceil(mediaDia * 15 * 0.8)); // 15 dias com 20% de margem
+        return '<tr><td>' + (i+1) + '</td><td>' + nome + '</td><td class="num">' + total.toLocaleString('pt-BR') + '</td><td class="num">' + mediaDia.toFixed(1) + '</td><td class="num"><strong style="color:var(--accent)">' + sugestao.toLocaleString('pt-BR') + ' un</strong></td></tr>';
+    }).join('');
+
+    if (sorted.length === 0) tbody.innerHTML = '<tr><td colspan="5" class="loading-text">Carregue as vendas para ver as sugestões</td></tr>';
+}
+
+// ===== WHATSAPP =====
+function mostrarEnvioWhatsApp() {
+    document.getElementById('whatsapp-box').style.display = 'block';
+    document.getElementById('whatsapp-box').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function enviarWhatsApp() {
+    const numero = document.getElementById('whats-numero').value.trim();
+    if (!numero) { mostrarToast('Informe o telefone com DDD','error'); return; }
+
+    const statusEl = document.getElementById('whatsapp-status');
+    statusEl.innerHTML = '<span style="color:var(--amber)">Enviando...</span>';
+
+    // Montar resumo
+    const totalVendas = vendasData.length;
+    const totalValor = vendasData.reduce((s, v) => s + (v.valorLiquido || 0), 0);
+    const totalItens = vendasData.reduce((s, v) => s + (v.produtos || []).filter(p => !p.cancelado).reduce((ss, p) => ss + (p.quantidade || 1), 0), 0);
+    const ticketMedio = totalVendas > 0 ? totalValor / totalVendas : 0;
+
+    // Por loja
+    const porLoja = {};
+    vendasData.forEach(v => {
+        const nome = v.unidadeNome || v.unidadeNombre || 'Sem loja';
+        porLoja[nome] = (porLoja[nome] || 0) + (v.valorLiquido || 0);
+    });
+
+    // Top 5 produtos
+    const produtoMap = {};
+    vendasData.forEach(v => {
+        (v.produtos || []).filter(p => !p.cancelado).forEach(p => {
+            const nome = p.descricaoReduzida || p.descricaoComercial || '--';
+            if (!produtoMap[nome]) produtoMap[nome] = 0;
+            produtoMap[nome] += (p.quantidade || 1);
+        });
+    });
+    const top5 = Object.entries(produtoMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+    const periodo = formatarData(document.getElementById('data-inicio').value) + ' a ' + formatarData(document.getElementById('data-fim').value);
+    let msg = '📊 *Relatório de Vendas*\n';
+    msg += '📅 ' + periodo + '\n\n';
+    msg += '💰 *Total:* ' + formatarMoeda(totalValor) + '\n';
+    msg += '🛒 *Vendas:* ' + totalVendas.toLocaleString('pt-BR') + '\n';
+    msg += '📦 *Itens:* ' + totalItens.toLocaleString('pt-BR') + '\n';
+    msg += '🏷 *Ticket Médio:* ' + formatarMoeda(ticketMedio) + '\n\n';
+
+    if (Object.keys(porLoja).length > 0) {
+        msg += '*Por Loja:*\n';
+        Object.entries(porLoja).sort((a, b) => b[1] - a[1]).forEach(([loja, valor]) => {
+            msg += '  ' + loja + ': ' + formatarMoeda(valor) + '\n';
+        });
+    }
+    msg += '\n*Top Produtos:*\n';
+    top5.forEach(([nome, qtd], i) => { msg += '  ' + (i+1) + '. ' + nome + ': ' + qtd.toLocaleString('pt-BR') + ' un\n'; });
+
+    try {
+        const res = await e4post('/alertas/whatsapp', {
+            telefone: '55' + numero.replace(/\D/g, ''),
+            mensagem: msg
+        });
+        if (res.mensagem) {
+            mostrarToast(res.mensagem, 'success');
+            statusEl.innerHTML = '<span style="color:var(--green)">✓ ' + res.mensagem + '</span>';
+        } else if (res.error) {
+            statusEl.innerHTML = '<span style="color:var(--red)">Erro: ' + res.error + '</span>';
+        } else {
+            statusEl.innerHTML = '<span style="color:var(--green)">✓ Mensagem enviada com sucesso!</span>';
+        }
+    } catch(e) {
+        statusEl.innerHTML = '<span style="color:var(--red)">Erro ao enviar: ' + e.message + '</span>';
+    }
+}
+
+init();
+
+function ehHoje() {
+    const hoje = dataLocal();
+    return document.getElementById('data-inicio').value === hoje && document.getElementById('data-fim').value === hoje;
+}
+
+// Auto-carregar as vendas de hoje ao abrir
+setTimeout(() => {
+    if (ehHoje()) carregarTudo();
+}, 500);
+</script>
+</body>
+</html>

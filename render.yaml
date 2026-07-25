@@ -15,3 +15,10 @@ services:
     buildCommand: ""
     startCommand: node nf-controle/server.js
     plan: free
+
+  - type: web
+    name: relatorios-dia
+    runtime: node
+    buildCommand: ""
+    startCommand: node relatorios-dia/server.js
+    plan: free
