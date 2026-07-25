@@ -122,8 +122,9 @@ async function enviarWhatsApp(mensagem) {
     console.log('Enviando WhatsApp...');
     try {
         const res = await apiPost('/alertas/whatsapp', {
-            telefone: TELEFONE,
-            mensagem: mensagem
+            whatsapp: TELEFONE,
+            assunto: 'Relatorio de Vendas - ' + new Date().toLocaleDateString('pt-BR'),
+            conteudo: mensagem
         });
         console.log('Resposta:', JSON.stringify(res));
         return res;

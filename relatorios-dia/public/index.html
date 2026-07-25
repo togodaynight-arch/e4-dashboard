@@ -356,16 +356,17 @@ async function enviarWhatsApp() {
 
     try {
         const res = await e4post('/alertas/whatsapp', {
-            telefone: '55' + numero.replace(/\D/g, ''),
-            mensagem: msg
+            whatsapp: numero.replace(/\D/g, ''),
+            assunto: 'Relatorio de Vendas',
+            conteudo: msg
         });
-        if (res.mensagem) {
-            mostrarToast(res.mensagem, 'success');
-            statusEl.innerHTML = '<span style="color:var(--green)">✓ ' + res.mensagem + '</span>';
-        } else if (res.error) {
-            statusEl.innerHTML = '<span style="color:var(--red)">Erro: ' + res.error + '</span>';
+        if (res.bSucesso === true) {
+            mostrarToast('Relatorio enviado para WhatsApp! ID: ' + res.id, 'success');
+            statusEl.innerHTML = '<span style="color:var(--green)">✓ Enviado com sucesso!</span>';
+        } else if (res.bSucesso === false) {
+            statusEl.innerHTML = '<span style="color:var(--red)">Erro: ' + (res.mensagem || 'falha ao enviar') + '</span>';
         } else {
-            statusEl.innerHTML = '<span style="color:var(--green)">✓ Mensagem enviada com sucesso!</span>';
+            statusEl.innerHTML = '<span style="color:var(--green)">✓ Mensagem enfileirada!</span>';
         }
     } catch(e) {
         statusEl.innerHTML = '<span style="color:var(--red)">Erro ao enviar: ' + e.message + '</span>';
