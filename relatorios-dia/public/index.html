@@ -92,10 +92,13 @@ tr:hover td{background:#f8fafc}
   </div>
 
   <div id="whatsapp-box">
-    <h3 style="margin-bottom:12px;"><i class="material-icons" style="font-size:18px;vertical-align:middle;">whatsapp</i> Enviar Resumo por WhatsApp</h3>
+    <h3 style="margin-bottom:12px;"><i class="material-icons" style="font-size:18px;vertical-align:middle;">send</i> Enviar Relatório</h3>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-      <div class="control-group"><label>Telefone (com DDD)</label><input type="text" id="whats-numero" placeholder="11999999999" style="width:180px"></div>
-      <button class="btn btn-whats" onclick="enviarWhatsApp()"><i class="material-icons" style="font-size:16px;">send</i> Enviar Agora</button>
+      <div class="control-group"><label>WhatsApp (com DDD)</label><input type="text" id="whats-numero" placeholder="11999999999" style="width:170px"></div>
+      <button class="btn btn-whats" onclick="enviarWhatsApp()"><i class="material-icons" style="font-size:16px;">whatsapp</i> WhatsApp</button>
+      <span style="color:var(--muted);margin:0 4px;">ou</span>
+      <div class="control-group"><label>Email</label><input type="email" id="email-destino" placeholder="seu@email.com" value="togodaynight@gmail.com" style="width:220px"></div>
+      <button class="btn btn-primary" onclick="enviarEmail()"><i class="material-icons" style="font-size:16px;">email</i> Email</button>
       <button class="btn btn-ghost btn-sm" onclick="document.getElementById('whatsapp-box').style.display='none'">Cancelar</button>
     </div>
     <div id="whatsapp-status" style="margin-top:10px;font-size:13px;"></div>
@@ -306,51 +309,127 @@ function mostrarEnvioWhatsApp() {
     document.getElementById('whatsapp-box').scrollIntoView({ behavior: 'smooth' });
 }
 
-async function enviarWhatsApp() {
-    const numero = document.getElementById('whats-numero').value.trim();
-    if (!numero) { mostrarToast('Informe o telefone com DDD','error'); return; }
-
-    const statusEl = document.getElementById('whatsapp-status');
-    statusEl.innerHTML = '<span style="color:var(--amber)">Enviando...</span>';
-
-    // Montar resumo
+function montarResumo() {
     const totalVendas = vendasData.length;
     const totalValor = vendasData.reduce((s, v) => s + (v.valorLiquido || 0), 0);
     const totalItens = vendasData.reduce((s, v) => s + (v.produtos || []).filter(p => !p.cancelado).reduce((ss, p) => ss + (p.quantidade || 1), 0), 0);
     const ticketMedio = totalVendas > 0 ? totalValor / totalVendas : 0;
 
-    // Por loja
     const porLoja = {};
     vendasData.forEach(v => {
         const nome = v.unidadeNome || v.unidadeNombre || 'Sem loja';
         porLoja[nome] = (porLoja[nome] || 0) + (v.valorLiquido || 0);
     });
 
-    // Top 5 produtos
     const produtoMap = {};
     vendasData.forEach(v => {
         (v.produtos || []).filter(p => !p.cancelado).forEach(p => {
             const nome = p.descricaoReduzida || p.descricaoComercial || '--';
-            if (!produtoMap[nome]) produtoMap[nome] = 0;
-            produtoMap[nome] += (p.quantidade || 1);
+            produtoMap[nome] = (produtoMap[nome] || 0) + (p.quantidade || 1);
         });
     });
     const top5 = Object.entries(produtoMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
     const periodo = formatarData(document.getElementById('data-inicio').value) + ' a ' + formatarData(document.getElementById('data-fim').value);
-    let msg = '📊 *Relatório de Vendas*\n';
-    msg += '📅 ' + periodo + '\n\n';
-    msg += '💰 *Total:* ' + formatarMoeda(totalValor) + '\n';
-    msg += '🛒 *Vendas:* ' + totalVendas.toLocaleString('pt-BR') + '\n';
-    msg += '📦 *Itens:* ' + totalItens.toLocaleString('pt-BR') + '\n';
-    msg += '🏷 *Ticket Médio:* ' + formatarMoeda(ticketMedio) + '\n\n';
 
-    if (Object.keys(porLoja).length > 0) {
-        msg += '*Por Loja:*\n';
-        Object.entries(porLoja).sort((a, b) => b[1] - a[1]).forEach(([loja, valor]) => {
-            msg += '  ' + loja + ': ' + formatarMoeda(valor) + '\n';
+    return { totalVendas, totalValor, totalItens, ticketMedio, porLoja, top5, periodo };
+}
+
+function montarTextoResumo(r) {
+    let txt = '';
+    txt += 'Total: ' + formatarMoeda(r.totalValor) + '\n';
+    txt += 'Vendas: ' + r.totalVendas.toLocaleString('pt-BR') + '\n';
+    txt += 'Itens: ' + r.totalItens.toLocaleString('pt-BR') + '\n';
+    txt += 'Ticket Medio: ' + formatarMoeda(r.ticketMedio) + '\n\n';
+    if (Object.keys(r.porLoja).length > 0) {
+        txt += 'Por Loja:\n';
+        Object.entries(r.porLoja).sort((a, b) => b[1] - a[1]).forEach(([loja, valor]) => {
+            txt += '  ' + loja + ': ' + formatarMoeda(valor) + '\n';
         });
     }
+    txt += '\nTop 5 Produtos:\n';
+    r.top5.forEach(([nome, qtd], i) => { txt += '  ' + (i+1) + '. ' + nome + ': ' + qtd.toLocaleString('pt-BR') + ' un\n'; });
+    return txt;
+}
+
+function montarHtmlResumo(r) {
+    let html = '<h2 style="color:#1e293b;">Relatorio de Vendas</h2>';
+    html += '<p style="color:#64748b;">' + r.periodo + '</p>';
+    html += '<table style="width:100%;border-collapse:collapse;margin:16px 0;">';
+    html += '<tr style="background:#f1f5f9;"><td style="padding:10px;font-weight:700;">Total</td><td style="padding:10px;text-align:right;font-weight:800;color:#16a34a;">' + formatarMoeda(r.totalValor) + '</td></tr>';
+    html += '<tr><td style="padding:10px;">Vendas</td><td style="padding:10px;text-align:right;">' + r.totalVendas.toLocaleString('pt-BR') + '</td></tr>';
+    html += '<tr style="background:#f1f5f9;"><td style="padding:10px;">Itens</td><td style="padding:10px;text-align:right;">' + r.totalItens.toLocaleString('pt-BR') + '</td></tr>';
+    html += '<tr><td style="padding:10px;">Ticket Medio</td><td style="padding:10px;text-align:right;font-weight:600;">' + formatarMoeda(r.ticketMedio) + '</td></tr>';
+    html += '</table>';
+    if (Object.keys(r.porLoja).length > 0) {
+        html += '<h3 style="color:#1e293b;">Por Loja</h3><table style="width:100%;border-collapse:collapse;margin-bottom:12px;">';
+        Object.entries(r.porLoja).sort((a, b) => b[1] - a[1]).forEach(([loja, valor]) => {
+            html += '<tr><td style="padding:6px;">' + loja + '</td><td style="padding:6px;text-align:right;font-weight:600;">' + formatarMoeda(valor) + '</td></tr>';
+        });
+        html += '</table>';
+    }
+    html += '<h3 style="color:#1e293b;">Top 5 Produtos</h3><ol style="padding-left:20px;">';
+    r.top5.forEach(([nome, qtd]) => { html += '<li>' + nome + ' — ' + qtd.toLocaleString('pt-BR') + ' un</li>'; });
+    html += '</ol>';
+    return html;
+}
+
+async function enviarWhatsApp() {
+    const numero = document.getElementById('whats-numero').value.trim();
+    if (!numero) { mostrarToast('Informe o telefone com DDD','error'); return; }
+
+    const statusEl = document.getElementById('whatsapp-status');
+    statusEl.innerHTML = '<span style="color:var(--amber)">Enviando WhatsApp...</span>';
+
+    const r = montarResumo();
+    const msg = montarTextoResumo(r);
+
+    try {
+        const res = await e4post('/alertas/whatsapp', {
+            whatsapp: numero.replace(/\D/g, ''),
+            assunto: 'Relatorio de Vendas - ' + r.periodo,
+            conteudo: msg
+        });
+        if (res.bSucesso === true) {
+            statusEl.innerHTML = '<span style="color:var(--green)">✓ WhatsApp enfileirado (ID ' + res.id + '). Verifique seu celular.</span>';
+        } else if (res.bSucesso === false) {
+            statusEl.innerHTML = '<span style="color:var(--red)">Erro: ' + (res.mensagem || 'falha ao enviar') + '</span>';
+        } else {
+            statusEl.innerHTML = '<span style="color:var(--green)">✓ Mensagem enfileirada!</span>';
+        }
+    } catch(e) {
+        statusEl.innerHTML = '<span style="color:var(--red)">Erro: ' + e.message + '</span>';
+    }
+}
+
+async function enviarEmail() {
+    const email = document.getElementById('email-destino').value.trim();
+    if (!email) { mostrarToast('Informe o email','error'); return; }
+
+    const statusEl = document.getElementById('whatsapp-status');
+    statusEl.innerHTML = '<span style="color:var(--amber)">Enviando email...</span>';
+
+    const r = montarResumo();
+    const html = montarHtmlResumo(r);
+
+    try {
+        const res = await e4post('/alertas/email', {
+            de: 'relatorio@e4sistemas.com.br',
+            para: email,
+            assunto: 'Relatorio de Vendas - ' + r.periodo,
+            conteudo: html
+        });
+        if (res.bSucesso === true) {
+            statusEl.innerHTML = '<span style="color:var(--green)">✓ Email enviado para ' + email + '! Verifique sua caixa de entrada.</span>';
+        } else if (res.bSucesso === false) {
+            statusEl.innerHTML = '<span style="color:var(--red)">Erro: ' + (res.mensagem || 'falha ao enviar') + '</span>';
+        } else {
+            statusEl.innerHTML = '<span style="color:var(--green)">✓ Email enfileirado!</span>';
+        }
+    } catch(e) {
+        statusEl.innerHTML = '<span style="color:var(--red)">Erro: ' + e.message + '</span>';
+    }
+}
     msg += '\n*Top Produtos:*\n';
     top5.forEach(([nome, qtd], i) => { msg += '  ' + (i+1) + '. ' + nome + ': ' + qtd.toLocaleString('pt-BR') + ' un\n'; });
 
