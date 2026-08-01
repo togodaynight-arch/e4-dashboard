@@ -1,7 +1,5 @@
 var API_CONFIG = {
-    baseUrl: '/api',
-    clientId: '215',
-    token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjbGllbnRlIjoiMjE1IiwiZGF0YSI6IjIwMjYtMDQtMjkgMTU6NDU6MTQiLCJkb2N1bWVudG8iOiJ2cDAwMDA3MzUzLXAwMDEiLCJlbmRlcmVjbyI6InJ1YSB0cmFqYW5vIHJlaXMiLCJjb250YXRvIjoiY2xpZW50ZSIsInRlbGVmb25lIjoiMTE5OTk5OTkiLCJpc3MiOiJlNHNpc3RlbWFzLmNvbS5iciIsInN1YiI6IkF1dGVudGljYVx1MDBlN1x1MDBlM28iLCJhdWQiOiJUZXJjZWlyb3MgdmlhIEFQSSJ9.VKTPNRxHJauxQnSc/ur7cEpc9P6XO/lLYDacj8dj450='
+    baseUrl: '/api'
 };
 
 var allSales = [];
@@ -43,7 +41,7 @@ function nomeLoja(s) {
 }
 
 function apiHeaders() {
-    return { 'Content-Type': 'application/json', 'X-Cliente-Id': API_CONFIG.clientId, 'Authorization': 'Bearer ' + API_CONFIG.token };
+    return { 'Content-Type': 'application/json' };
 }
 
 async function fetchSales(dataInicio, dataFim) {

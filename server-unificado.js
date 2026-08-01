@@ -11,6 +11,8 @@ const TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjbGllbnRlIjoiMjE1IiwiZGF0
 const PORTAL_USER = 'togodaynight@gmail.com';
 const PORTAL_PASS = '190690';
 const OCCURRENCE_TYPES = ['1','2','8','13','32','41','42'];
+const AUTH_USER = 'colaborador';
+const AUTH_PASS = '102027';
 
 let phpsessid = null;
 let sessExpires = 0;
@@ -276,6 +278,20 @@ function handleEntradasPorta(req, res) {
 
 // ========== MAIN SERVER ==========
 const server = http.createServer((req, res) => {
+    // Basic Auth
+    var auth = req.headers['authorization'];
+    if (!auth || !auth.startsWith('Basic ')) {
+        res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="E4 Dashboard"', 'Content-Type': 'text/html' });
+        res.end('<h1>Acesso restrito</h1><p>Credenciais necessarias.</p>');
+        return;
+    }
+    var creds = Buffer.from(auth.split(' ')[1], 'base64').toString().split(':');
+    if (creds[0] !== AUTH_USER || creds[1] !== AUTH_PASS) {
+        res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="E4 Dashboard"', 'Content-Type': 'text/html' });
+        res.end('<h1>Acesso negado</h1><p>Credenciais invalidas.</p>');
+        return;
+    }
+
     if (req.method === 'OPTIONS') {
         res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': '*' });
         res.end();
