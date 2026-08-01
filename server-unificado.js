@@ -6,13 +6,13 @@ const path = require('path');
 
 const PORT = process.env.PORT || 3000;
 const API_BASE = 'https://portal.e4sistemas.com.br';
-const CLIENT_ID = '215';
-const TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjbGllbnRlIjoiMjE1IiwiZGF0YSI6IjIwMjYtMDQtMjkgMTU6NDU6MTQiLCJkb2N1bWVudG8iOiJ2cDAwMDA3MzUzLXAwMDEiLCJlbmRlcmVjbyI6InJ1YSB0cmFqYW5vIHJlaXMiLCJjb250YXRvIjoiY2xpZW50ZSIsInRlbGVmb25lIjoiMTE5OTk5OTkiLCJpc3MiOiJlNHNpc3RlbWFzLmNvbS5iciIsInN1YiI6IkF1dGVudGljYVx1MDBlN1x1MDBlM28iLCJhdWQiOiJUZXJjZWlyb3MgdmlhIEFQSSJ9.VKTPNRxHJauxQnSc/ur7cEpc9P6XO/lLYDacj8dj450=';
-const PORTAL_USER = 'togodaynight@gmail.com';
-const PORTAL_PASS = '190690';
+const CLIENT_ID = process.env.E4_CLIENT_ID || '215';
+const TOKEN = process.env.E4_TOKEN || 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjbGllbnRlIjoiMjE1IiwiZGF0YSI6IjIwMjYtMDQtMjkgMTU6NDU6MTQiLCJkb2N1bWVudG8iOiJ2cDAwMDA3MzUzLXAwMDEiLCJlbmRlcmVjbyI6InJ1YSB0cmFqYW5vIHJlaXMiLCJjb250YXRvIjoiY2xpZW50ZSIsInRlbGVmb25lIjoiMTE5OTk5OTkiLCJpc3MiOiJlNHNpc3RlbWFzLmNvbS5iciIsInN1YiI6IkF1dGVudGljYVx1MDBlN1x1MDBlM28iLCJhdWQiOiJUZXJjZWlyb3MgdmlhIEFQSSJ9.VKTPNRxHJauxQnSc/ur7cEpc9P6XO/lLYDacj8dj450=';
+const PORTAL_USER = process.env.E4_USER || 'togodaynight@gmail.com';
+const PORTAL_PASS = process.env.E4_PASS || '190690';
 const OCCURRENCE_TYPES = ['1','2','8','13','32','41','42'];
-const AUTH_USER = 'colaborador';
-const AUTH_PASS = '102027';
+const AUTH_USER = process.env.AUTH_USER || 'colaborador';
+const AUTH_PASS = process.env.AUTH_PASS || '102027';
 
 let phpsessid = null;
 let sessExpires = 0;
