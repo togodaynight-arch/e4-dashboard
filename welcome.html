@@ -231,7 +231,7 @@ var config = {
     corPagamentoNome: localStorage.getItem('cfg-cor-pagamento-nome') || 'Verde',
     corSemvenda: localStorage.getItem('cfg-cor-semvenda') || '#ef4444',
     corSemvendaNome: localStorage.getItem('cfg-cor-semvenda-nome') || 'Vermelho',
-    ledStrips: JSON.parse(localStorage.getItem('cfg-led-strips') || '[{"nome":"Teto 4 metros","pino":4,"qtdLeds":240,"tamanho":"4m","habilitado":true},{"nome":"Balcão 1 metro","pino":5,"qtdLeds":60,"tamanho":"1m","habilitado":true},{"nome":"Vitrine 30cm","pino":6,"qtdLeds":18,"tamanho":"30cm","habilitado":true}]')
+    ledStrips: JSON.parse(localStorage.getItem('cfg-led-strips') || '[{"nome":"Fita 4m","pino":4,"qtdLeds":240,"tamanho":"4m","habilitado":true},{"nome":"Fita 30cm D5","pino":5,"qtdLeds":18,"tamanho":"30cm","habilitado":true},{"nome":"Fita 30cm D2","pino":2,"qtdLeds":18,"tamanho":"30cm","habilitado":true}]')
 };
 
 function salvarConfig() {
@@ -291,36 +291,52 @@ function renderLedStrips() {
     var el = document.getElementById('led-strips');
     var html = '';
     config.ledStrips.forEach(function(s, i) {
-        html += '<div class="led-strip-config">' +
-            '<h5>Fita #' + (i + 1) + ': ' + s.nome + '</h5>' +
+        html += '<div class="led-strip-config" data-idx="' + i + '">' +
+            '<h5>Fita #' + (i + 1) + ': ' + s.nome + ' <span style="color:#666;font-size:9px">(GPIO ' + s.pino + ')</span></h5>' +
             '<div class="row">' +
                 '<input type="text" class="str-nome" value="' + s.nome + '" placeholder="Nome" style="flex:3">' +
                 '<input type="text" class="str-tamanho" value="' + (s.tamanho || '') + '" placeholder="Tam." style="flex:1;font-size:10px">' +
             '</div>' +
             '<div class="row" style="margin-top:4px">' +
                 '<label style="font-size:9px;color:#666">Pino:</label>' +
-                '<input type="number" class="str-pino" value="' + s.pino + '" min="0" max="39" style="width:50px">' +
+                '<input type="number" class="str-pino" value="' + s.pino + '" min="0" max="39" style="width:50px" onchange="atualizarLabelFita(' + i + ')">' +
                 '<label style="font-size:9px;color:#666;margin-left:4px">LEDs:</label>' +
                 '<input type="number" class="str-qtd" value="' + s.qtdLeds + '" min="1" style="width:60px">' +
                 '<label style="font-size:10px;color:#666;display:flex;align-items:center;gap:4px;margin:0 0 0 auto;cursor:pointer">' +
                     '<input type="checkbox" class="str-habilitado" ' + (s.habilitado ? 'checked' : '') + '> On' +
                 '</label>' +
             '</div>' +
-            '<div class="row" style="margin-top:6px;gap:6px">' +
-                '<button type="button" class="btn-test-strip" onclick="testarFita(' + i + ')" style="flex:1;background:#d9b759;color:#000;border:none;border-radius:4px;padding:5px;font-size:10px;font-weight:600;cursor:pointer">💡 Testar Fita</button>' +
-                '<button type="button" class="btn-test-strip-off" onclick="testarFitaApagar(' + i + ')" style="flex:1;background:#444;color:#fff;border:none;border-radius:4px;padding:5px;font-size:10px;font-weight:600;cursor:pointer">⏹️ Apagar Fita</button>' +
+            '<div class="row" style="margin-top:6px;gap:6px;align-items:center">' +
+                '<input type="color" id="str-cor-' + i + '" value="#ffaa00" style="width:36px;height:30px;border:none;padding:0;cursor:pointer;background:none">' +
+                '<button type="button" class="btn-test-strip" onclick="testarFita(' + i + ')" style="flex:1;background:#d9b759;color:#000;border:none;border-radius:4px;padding:5px;font-size:10px;font-weight:600;cursor:pointer">💡 Testar</button>' +
+                '<button type="button" class="btn-test-strip-off" onclick="testarFitaApagar(' + i + ')" style="flex:1;background:#444;color:#fff;border:none;border-radius:4px;padding:5px;font-size:10px;font-weight:600;cursor:pointer">⏹️ Apagar</button>' +
             '</div>' +
+            '<div id="str-status-' + i + '" style="font-size:9px;color:#888;margin-top:4px;height:12px"></div>' +
         '</div>';
     });
     el.innerHTML = html;
 }
 
+function atualizarLabelFita(idx) {
+    var configEl = document.querySelector('.led-strip-config[data-idx="' + idx + '"]');
+    if (!configEl) return;
+    var pino = configEl.querySelector('.str-pino').value;
+    var h5 = configEl.querySelector('h5');
+    var nome = configEl.querySelector('.str-nome').value || ('Fita #' + (idx + 1));
+    h5.innerHTML = nome + ' <span style="color:#666;font-size:9px">(GPIO ' + pino + ')</span>';
+}
+
 function testarFita(idx) {
-    var cor = document.getElementById('manual-cor') ? document.getElementById('manual-cor').value : '#ffaa00';
+    var corEl = document.getElementById('str-cor-' + idx);
+    var cor = corEl ? corEl.value : '#ffaa00';
+    var statusEl = document.getElementById('str-status-' + idx);
     var url = 'http://' + config.esp32Ip + ':' + config.esp32Port + '/comando';
     var body = { fita: idx, cor: cor, brilho: config.ledBrilho };
 
+    if (statusEl) statusEl.textContent = 'Enviando...';
+
     if (sistema.simulacao) {
+        if (statusEl) statusEl.textContent = 'Modo simulação ativo';
         alert('Desmarque "Modo Simulação" para testar a fita real.');
         return;
     }
@@ -332,26 +348,41 @@ function testarFita(idx) {
     })
     .then(function(r) { return r.json(); })
     .then(function(d) {
+        if (statusEl) statusEl.textContent = 'OK: ' + cor;
         document.getElementById('sb-esp32').textContent = 'Fita ' + (idx + 1) + ' testada';
         document.getElementById('sb-esp32').className = 'active';
     })
-    .catch(function() {
+    .catch(function(e) {
+        if (statusEl) statusEl.textContent = 'Erro: ESP32 offline';
         document.getElementById('sb-esp32').textContent = 'OFFLINE';
         document.getElementById('sb-esp32').className = 'warn';
     });
 }
 
 function testarFitaApagar(idx) {
+    var statusEl = document.getElementById('str-status-' + idx);
     var url = 'http://' + config.esp32Ip + ':' + config.esp32Port + '/comando';
     var body = { fita: idx, comando: 'apagar' };
 
-    if (sistema.simulacao) return;
+    if (sistema.simulacao) {
+        if (statusEl) statusEl.textContent = 'Modo simulação ativo';
+        return;
+    }
+
+    if (statusEl) statusEl.textContent = 'Apagando...';
 
     fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
-    }).catch(function() {});
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (statusEl) statusEl.textContent = 'Apagada';
+    })
+    .catch(function() {
+        if (statusEl) statusEl.textContent = 'Erro';
+    });
 }
 
 function enviarConfigESP32() {
