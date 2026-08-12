@@ -443,6 +443,9 @@ void handleComando() {
         }
     }
 
+    server.sendHeader("Access-Control-Allow-Origin", "*");
+    server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
     server.send(code, "application/json", resposta);
 }
 
@@ -461,6 +464,9 @@ void handleStatus() {
     json += "],";
     json += "\"ip\":\"" + WiFi.localIP().toString() + "\"";
     json += "}";
+    server.sendHeader("Access-Control-Allow-Origin", "*");
+    server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
     server.send(200, "application/json", json);
 }
 
@@ -472,6 +478,9 @@ void handleCores() {
         if (i < total - 1) json += ",";
     }
     json += "]";
+    server.sendHeader("Access-Control-Allow-Origin", "*");
+    server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
     server.send(200, "application/json", json);
 }
 
@@ -483,7 +492,17 @@ void handleEfeitos() {
         if (i < 6) json += ",";
     }
     json += "]";
+    server.sendHeader("Access-Control-Allow-Origin", "*");
+    server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
     server.send(200, "application/json", json);
+}
+
+void handleOptions() {
+    server.sendHeader("Access-Control-Allow-Origin", "*");
+    server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
+    server.send(204);
 }
 
 // ========== SETUP ==========
@@ -549,9 +568,13 @@ void setup() {
 
     // Rotas HTTP
     server.on("/comando", HTTP_POST, handleComando);
+    server.on("/comando", HTTP_OPTIONS, handleOptions);
     server.on("/status", handleStatus);
+    server.on("/status", HTTP_OPTIONS, handleOptions);
     server.on("/cores", handleCores);
+    server.on("/cores", HTTP_OPTIONS, handleOptions);
     server.on("/efeitos", handleEfeitos);
+    server.on("/efeitos", HTTP_OPTIONS, handleOptions);
     server.begin();
     Serial.println("Servidor HTTP iniciado na porta 80");
 }
