@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>To GO - Bem-vindo</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Montserrat',sans-serif;background:#0a0a0a;color:#fff;overflow:hidden;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
+.welcome{text-align:center;opacity:0;transform:scale(0.8);transition:all 0.8s cubic-bezier(0.175,0.885,0.32,1.275)}
+.welcome.show{opacity:1;transform:scale(1)}
+.welcome.hide{opacity:0;transform:scale(0.8)}
+.logo{font-size:24px;font-weight:300;letter-spacing:8px;color:#d9b759;margin-bottom:40px;text-transform:uppercase}
+.greeting{font-size:72px;font-weight:900;letter-spacing:2px;background:linear-gradient(135deg,#d9b759,#f0d080,#d9b759);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:20px}
+.name{font-size:100px;font-weight:900;letter-spacing:4px;color:#fff;line-height:1.1;text-shadow:0 0 60px rgba(217,183,89,0.3);margin-bottom:16px}
+.store{font-size:28px;font-weight:600;color:#d9b759;letter-spacing:4px}
+.led-info{margin-top:50px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;color:#555}
+.led-dot{width:10px;height:10px;border-radius:50%;background:#333;transition:0.5s}
+.led-dot.on{background:#f59e0b;box-shadow:0 0 12px #f59e0b}
+.led-dot.ok{background:#10b981;box-shadow:0 0 12px #10b981}
+.idle{text-align:center;opacity:0.35;transition:opacity 0.5s}
+.idle.hidden{opacity:0}
+.idle-logo{font-size:52px;font-weight:900;color:#d9b759;margin-bottom:8px}
+.idle-text{font-size:18px;letter-spacing:4px;color:#555}
+
+/* Painel de controle - pressione C para abrir */
+.panel{position:fixed;top:10px;right:10px;background:rgba(20,20,30,0.95);border:1px solid #333;border-radius:12px;padding:16px;width:320px;max-height:80vh;overflow-y:auto;z-index:999;display:none;font-size:12px}
+.panel.open{display:block}
+.panel h4{color:#d9b759;margin:0 0 10px;font-size:14px}
+.panel label{display:block;color:#999;margin-bottom:2px;font-size:10px;text-transform:uppercase}
+.panel input,.panel select{width:100%;padding:6px 8px;margin-bottom:10px;background:#1a1a2e;border:1px solid #333;color:#fff;border-radius:4px;font-size:12px;font-family:inherit}
+.panel button{width:100%;padding:8px;margin:4px 0;border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:0.2s}
+.btn-simulate{background:#d9b759;color:#000}
+.btn-pay{background:#10b981}
+.btn-reset{background:#ef4444}
+.btn-save{background:#3b82f6}
+.btn-fechar{background:#444;margin-top:8px}
+.panel button:hover{opacity:0.9}
+.panel .status-bar{margin-top:10px;padding:8px;background:#111;border-radius:6px;color:#666;font-size:10px}
+.panel .status-bar .active{color:#10b981}
+.panel .status-bar .warn{color:#f59e0b}
+.panel .section-title{color:#d9b759;margin:12px 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:1px;border-top:1px solid #333;padding-top:8px}
+.panel .color-row{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.panel .color-row label{min-width:80px;margin-bottom:0;color:#999}
+.panel input[type="color"]{width:40px;height:30px;border:none;padding:0;cursor:pointer;background:none}
+.panel .led-strip-config{background:#111;padding:8px;border-radius:6px;margin-bottom:8px}
+.panel .led-strip-config h5{color:#666;margin:0 0 4px;font-size:10px}
+.panel .led-strip-config .row{display:flex;gap:6px}
+.panel .led-strip-config .row input{flex:1;margin-bottom:4px}
+.panel .btn-danger{background:#333;color:#999;font-size:10px;padding:4px}
+.panel .btn-add{background:#d9b759;color:#000;font-size:11px;padding:6px;margin-bottom:8px}
+.panel summary{color:#d9b759;cursor:pointer;font-size:12px;font-weight:600;margin-bottom:8px}
+.panel .manual-led-control{background:#111;padding:10px;border-radius:6px;margin-bottom:8px}
+.panel .preset-colors .btn-preset{flex:1 1 calc(33% - 4px);padding:6px 2px;margin:0;font-size:9px;border-radius:4px;border:none;cursor:pointer;font-weight:600}
+.panel details{margin-bottom:8px}
+.hint{position:fixed;bottom:10px;right:10px;color:#333;font-size:10px;font-family:monospace}
+
+/* Barra LED simulada */
+.led-bar{position:fixed;bottom:0;left:0;right:0;height:6px;background:#111;transition:background 0.5s;z-index:99}
+.led-bar.amarelo{background:#f59e0b;box-shadow:0 0 20px #f59e0b}
+.led-bar.verde{background:#10b981;box-shadow:0 0 20px #10b981}
+.led-bar.vermelho{background:#ef4444;box-shadow:0 0 20px #ef4444}
+
+/* Toggle switch */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin:8px 0}
+.toggle-label{font-size:11px;color:#999}
+.toggle-switch{position:relative;width:44px;height:24px}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#333;border-radius:24px;transition:0.3s}
+.toggle-slider:before{content:"";position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#666;border-radius:50%;transition:0.3s}
+.toggle-switch input:checked+.toggle-slider{background:#10b981}
+.toggle-switch input:checked+.toggle-slider:before{transform:translateX(20px)}
+</style>
+</head>
+<body>
+
+<div class="idle" id="idle">
+    <div class="idle-logo">To GO</div>
+    <div class="idle-text">Aguardando clientes</div>
+</div>
+
+<div class="welcome" id="welcome">
+    <div class="logo" id="store-name-display">Loja</div>
+    <div class="greeting">BEM-VINDO</div>
+    <div class="name" id="customer-name-display">---</div>
+    <div class="store" id="customer-info-display"></div>
+    <div class="led-info">
+        <div class="led-dot" id="led-status"></div>
+        <span id="led-status-text">Aguardando...</span>
+    </div>
+</div>
+
+<div class="panel" id="panel">
+    <h4>⚙️ Configuração</h4>
+
+    <div class="toggle-row">
+        <span class="toggle-label">Modo Simulação (sem ESP32)</span>
+        <label class="toggle-switch">
+            <input type="checkbox" id="cfg-simulacao" onchange="toggleSimulacao()" checked>
+            <span class="toggle-slider"></span>
+        </label>
+    </div>
+
+    <details open>
+    <summary>📡 ESP32</summary>
+    <label>IP do ESP32</label>
+    <input type="text" id="cfg-esp32-ip" placeholder="192.168.1.200">
+    <label>Porta</label>
+    <input type="text" id="cfg-esp32-port" value="80">
+    </details>
+
+    <details open>
+    <summary>💡 LEDs</summary>
+    <div id="led-strips"></div>
+
+    <div class="section-title">Cores</div>
+    <div class="color-row">
+        <label>Entrada:</label>
+        <input type="color" id="cfg-cor-entrada" value="#f59e0b">
+        <input type="text" id="cfg-cor-entrada-nome" value="Laranja" style="flex:1;margin-bottom:0;font-size:10px;height:24px">
+    </div>
+    <div class="color-row">
+        <label>Pagamento:</label>
+        <input type="color" id="cfg-cor-pagamento" value="#10b981">
+        <input type="text" id="cfg-cor-pagamento-nome" value="Verde" style="flex:1;margin-bottom:0;font-size:10px;height:24px">
+    </div>
+    <div class="color-row">
+        <label>Sem venda:</label>
+        <input type="color" id="cfg-cor-semvenda" value="#ef4444">
+        <input type="text" id="cfg-cor-semvenda-nome" value="Vermelho" style="flex:1;margin-bottom:0;font-size:10px;height:24px">
+    </div>
+    <div class="row" style="gap:6px">
+        <div style="flex:1"><label>Duração (min)</label><input type="number" id="cfg-led-tempo" value="12" min="1" max="30"></div>
+        <div style="flex:1"><label>Brilho (0-255)</label><input type="number" id="cfg-led-brilho" value="50" min="1" max="255"></div>
+    </div>
+    </details>
+
+    <details>
+    <summary>🏪 Loja</summary>
+    <label>Nome da Loja</label>
+    <input type="text" id="cfg-loja" value="TRANS BUS" placeholder="TRANS BUS">
+    <label>Mensagem de Boas-vindas</label>
+    <input type="text" id="cfg-mensagem" value="BEM-VINDO" placeholder="BEM-VINDO">
+    </details>
+
+    <button class="btn-save" onclick="salvarConfig()">💾 Salvar Configuração</button>
+
+    <details open>
+    <summary>🎨 Controle Manual do LED</summary>
+    <div class="manual-led-control">
+        <label>Cor personalizada</label>
+        <div class="color-row">
+            <input type="color" id="manual-cor" value="#ffaa00" style="flex:1;height:36px">
+        </div>
+
+        <label>Cores pré-definidas</label>
+        <div class="preset-colors" id="preset-colors" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+            <button class="btn-preset" onclick="setCorManual('#ffaa00')" style="background:#ffaa00;color:#000">Amarelo</button>
+            <button class="btn-preset" onclick="setCorManual('#ff6600')" style="background:#ff6600;color:#fff">Laranja</button>
+            <button class="btn-preset" onclick="setCorManual('#00ff00')" style="background:#00ff00;color:#000">Verde</button>
+            <button class="btn-preset" onclick="setCorManual('#ff0000')" style="background:#ff0000;color:#fff">Vermelho</button>
+            <button class="btn-preset" onclick="setCorManual('#0000ff')" style="background:#0000ff;color:#fff">Azul</button>
+            <button class="btn-preset" onclick="setCorManual('#ffffff')" style="background:#ffffff;color:#000;border:1px solid #555">Branco</button>
+        </div>
+
+        <label>Efeito</label>
+        <select id="manual-efeito" style="width:100%;margin-bottom:8px;padding:6px;border-radius:4px;border:1px solid #444;background:#222;color:#fff">
+            <option value="solido">Sólido</option>
+            <option value="pulso">Pulso</option>
+            <option value="chase">Perseguição</option>
+            <option value="arcoiris">Arco-íris</option>
+            <option value="confete">Confete</option>
+            <option value="onda">Onda</option>
+        </select>
+
+        <div class="row" style="gap:8px">
+            <div style="flex:1">
+                <label>Brilho: <span id="manual-brilho-val">50</span></label>
+                <input type="range" id="manual-brilho" min="0" max="255" value="50" style="width:100%" oninput="document.getElementById('manual-brilho-val').textContent=this.value">
+            </div>
+            <div style="flex:1">
+                <label>Velocidade: <span id="manual-velocidade-val">50</span></label>
+                <input type="range" id="manual-velocidade" min="1" max="100" value="50" style="width:100%" oninput="document.getElementById('manual-velocidade-val').textContent=this.value">
+            </div>
+        </div>
+
+        <div class="row" style="gap:6px;margin-top:10px">
+            <button class="btn-pay" onclick="aplicarLEDManual()" style="flex:2">💡 Aplicar</button>
+            <button class="btn-reset" onclick="desligarLEDManual()" style="flex:1">⏹️ Desligar</button>
+        </div>
+
+        <button class="btn-simulate" onclick="atualizarStatusLED()" style="width:100%;margin-top:6px">🔄 Atualizar Status</button>
+        <div id="manual-led-status" style="font-size:10px;color:#aaa;margin-top:6px">Clique em Atualizar Status</div>
+    </div>
+    </details>
+
+    <div class="section-title">🧪 Teste</div>
+    <label>Nome do cliente</label>
+    <input type="text" id="sim-nome" placeholder="FULANO DE TAL">
+    <button class="btn-simulate" onclick="simularEntrada()">🚶 Simular Entrada</button>
+    <button class="btn-pay" onclick="simularPagamento()">💰 Simular Pagamento</button>
+    <button class="btn-reset" onclick="resetTudo()">🔄 Resetar Tudo</button>
+
+    <div class="status-bar" id="status-bar">
+        LED: <span id="sb-led">---</span><br>
+        Cliente: <span id="sb-cliente">---</span><br>
+        Última venda: <span id="sb-venda">---</span><br>
+        ESP32: <span id="sb-esp32">---</span>
+    </div>
+
+    <button class="btn-fechar" onclick="fecharPanel()">Fechar Painel</button>
+</div>
+
+<div class="hint">Pressione <b>C</b> para abrir painel de controle</div>
+
+<div class="led-bar" id="led-bar"></div>
+
+<script>
+// ========== CONFIGURAÇÃO (salva no localStorage) ==========
+var config = {
+    esp32Ip: localStorage.getItem('cfg-esp32-ip') || '192.168.0.200',
+    esp32Port: localStorage.getItem('cfg-esp32-port') || '80',
+    loja: localStorage.getItem('cfg-loja') || 'TRANS BUS',
+    mensagem: localStorage.getItem('cfg-mensagem') || 'BEM-VINDO',
+    ledTempo: parseInt(localStorage.getItem('cfg-led-tempo') || '12'),
+    ledBrilho: parseInt(localStorage.getItem('cfg-led-brilho') || '50'),
+    corEntrada: localStorage.getItem('cfg-cor-entrada') || '#f59e0b',
+    corEntradaNome: localStorage.getItem('cfg-cor-entrada-nome') || 'Laranja',
+    corPagamento: localStorage.getItem('cfg-cor-pagamento') || '#10b981',
+    corPagamentoNome: localStorage.getItem('cfg-cor-pagamento-nome') || 'Verde',
+    corSemvenda: localStorage.getItem('cfg-cor-semvenda') || '#ef4444',
+    corSemvendaNome: localStorage.getItem('cfg-cor-semvenda-nome') || 'Vermelho',
+    ledStrips: JSON.parse(localStorage.getItem('cfg-led-strips') || '[{"nome":"Teto 4 metros","pino":4,"qtdLeds":240,"tamanho":"4m","habilitado":true},{"nome":"Balcão 1 metro","pino":5,"qtdLeds":60,"tamanho":"1m","habilitado":true},{"nome":"Vitrine 30cm","pino":6,"qtdLeds":18,"tamanho":"30cm","habilitado":true}]')
+};
+
+function salvarConfig() {
+    config.esp32Ip = document.getElementById('cfg-esp32-ip').value;
+    config.esp32Port = document.getElementById('cfg-esp32-port').value;
+    config.loja = document.getElementById('cfg-loja').value;
+    config.mensagem = document.getElementById('cfg-mensagem').value;
+    config.ledTempo = parseInt(document.getElementById('cfg-led-tempo').value);
+    config.ledBrilho = parseInt(document.getElementById('cfg-led-brilho').value);
+    config.corEntrada = document.getElementById('cfg-cor-entrada').value;
+    config.corEntradaNome = document.getElementById('cfg-cor-entrada-nome').value;
+    config.corPagamento = document.getElementById('cfg-cor-pagamento').value;
+    config.corPagamentoNome = document.getElementById('cfg-cor-pagamento-nome').value;
+    config.corSemvenda = document.getElementById('cfg-cor-semvenda').value;
+    config.corSemvendaNome = document.getElementById('cfg-cor-semvenda-nome').value;
+
+    // Salva configuração das fitas LED
+    var strips = [];
+    document.querySelectorAll('.led-strip-config').forEach(function(el) {
+        strips.push({
+            nome: el.querySelector('.str-nome').value,
+            pino: parseInt(el.querySelector('.str-pino').value),
+            qtdLeds: parseInt(el.querySelector('.str-qtd').value),
+            tamanho: el.querySelector('.str-tamanho').value,
+            habilitado: el.querySelector('.str-habilitado').checked
+        });
+    });
+    config.ledStrips = strips;
+
+    Object.keys(config).forEach(function(k) {
+        var val = config[k];
+        if (typeof val === 'object') val = JSON.stringify(val);
+        localStorage.setItem('cfg-' + k, val);
+    });
+
+    document.getElementById('store-name-display').textContent = config.loja;
+    atualizarCoresDisplay();
+    fecharPanel();
+    enviarConfigESP32();
+}
+
+// ========== FITAS LED ==========
+function addLedStrip() {
+    var strips = config.ledStrips || [];
+    strips.push({ nome: 'Fita ' + (strips.length + 1), pino: 4 + strips.length, qtdLeds: 60, habilitado: true });
+    config.ledStrips = strips;
+    renderLedStrips();
+}
+
+function removeLedStrip(idx) {
+    config.ledStrips.splice(idx, 1);
+    if (config.ledStrips.length === 0) config.ledStrips = [{ nome: 'Fita Principal', pino: 4, qtdLeds: 240, habilitado: true }];
+    renderLedStrips();
+}
+
+function renderLedStrips() {
+    var el = document.getElementById('led-strips');
+    var html = '';
+    config.ledStrips.forEach(function(s, i) {
+        html += '<div class="led-strip-config">' +
+            '<h5>Fita #' + (i + 1) + ': ' + s.nome + '</h5>' +
+            '<div class="row">' +
+                '<input type="text" class="str-nome" value="' + s.nome + '" placeholder="Nome" style="flex:3">' +
+                '<input type="text" class="str-tamanho" value="' + (s.tamanho || '') + '" placeholder="Tam." style="flex:1;font-size:10px">' +
+            '</div>' +
+            '<div class="row" style="margin-top:4px">' +
+                '<label style="font-size:9px;color:#666">Pino:</label>' +
+                '<input type="number" class="str-pino" value="' + s.pino + '" min="0" max="39" style="width:50px">' +
+                '<label style="font-size:9px;color:#666;margin-left:4px">LEDs:</label>' +
+                '<input type="number" class="str-qtd" value="' + s.qtdLeds + '" min="1" style="width:60px">' +
+                '<label style="font-size:10px;color:#666;display:flex;align-items:center;gap:4px;margin:0 0 0 auto;cursor:pointer">' +
+                    '<input type="checkbox" class="str-habilitado" ' + (s.habilitado ? 'checked' : '') + '> On' +
+                '</label>' +
+            '</div>' +
+        '</div>';
+    });
+    el.innerHTML = html;
+}
+
+function enviarConfigESP32() {
+    var data = {
+        comando: 'config',
+        leds: config.ledStrips,
+        brilho: config.ledBrilho
+    };
+    fetch('http://' + config.esp32Ip + ':' + config.esp32Port + '/comando', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    }).catch(function() {});
+}
+
+// ========== CONTROLE MANUAL DO LED ==========
+function setCorManual(hex) {
+    document.getElementById('manual-cor').value = hex;
+}
+
+function aplicarLEDManual() {
+    var cor = document.getElementById('manual-cor').value;
+    var efeito = document.getElementById('manual-efeito').value;
+    var brilho = parseInt(document.getElementById('manual-brilho').value);
+    var velocidade = parseInt(document.getElementById('manual-velocidade').value);
+
+    var url = 'http://' + config.esp32Ip + ':' + config.esp32Port + '/comando';
+    var body = {
+        comando: 'cor',
+        cor: cor,
+        efeito: efeito,
+        brilho: brilho,
+        velocidade: velocidade
+    };
+
+    document.getElementById('manual-led-status').textContent = 'Enviando...';
+
+    if (sistema.simulacao) {
+        document.getElementById('manual-led-status').textContent = 'Modo simulação ativo (LED real não conectado)';
+        return;
+    }
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        document.getElementById('manual-led-status').textContent = 'OK: ' + d.cor + ' / ' + d.efeito + ' / brilho ' + d.brilho;
+        document.getElementById('sb-esp32').textContent = 'CONECTADO';
+        document.getElementById('sb-esp32').className = 'active';
+    })
+    .catch(function(e) {
+        document.getElementById('manual-led-status').textContent = 'ERRO: ESP32 offline ou IP incorreto';
+        document.getElementById('sb-esp32').textContent = 'OFFLINE';
+        document.getElementById('sb-esp32').className = 'warn';
+    });
+}
+
+function desligarLEDManual() {
+    var url = 'http://' + config.esp32Ip + ':' + config.esp32Port + '/comando';
+    var body = { comando: 'apagar' };
+
+    document.getElementById('manual-led-status').textContent = 'Desligando...';
+
+    if (sistema.simulacao) {
+        document.getElementById('manual-led-status').textContent = 'Modo simulação ativo';
+        return;
+    }
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        document.getElementById('manual-led-status').textContent = 'LED desligado';
+    })
+    .catch(function() {
+        document.getElementById('manual-led-status').textContent = 'ERRO: ESP32 offline';
+    });
+}
+
+function atualizarStatusLED() {
+    if (sistema.simulacao) {
+        document.getElementById('manual-led-status').textContent = 'Modo simulação ativo (não consulta ESP32)';
+        return;
+    }
+
+    var url = 'http://' + config.esp32Ip + ':' + config.esp32Port + '/status';
+    document.getElementById('manual-led-status').textContent = 'Consultando...';
+
+    fetch(url, { signal: AbortSignal.timeout(3000) })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        document.getElementById('manual-led-status').innerHTML =
+            'Cor: ' + d.cor + '<br>' +
+            'Efeito: ' + d.efeito + '<br>' +
+            'Brilho: ' + d.brilho + '<br>' +
+            'Velocidade: ' + d.velocidade + '<br>' +
+            'Ligado: ' + (d.ligado ? 'Sim' : 'Não') + '<br>' +
+            'IP: ' + d.ip;
+        document.getElementById('sb-esp32').textContent = 'CONECTADO';
+        document.getElementById('sb-esp32').className = 'active';
+
+        // Atualiza controles com valores atuais
+        document.getElementById('manual-cor').value = d.cor;
+        document.getElementById('manual-efeito').value = d.efeito;
+        document.getElementById('manual-brilho').value = d.brilho;
+        document.getElementById('manual-brilho-val').textContent = d.brilho;
+        document.getElementById('manual-velocidade').value = d.velocidade;
+        document.getElementById('manual-velocidade-val').textContent = d.velocidade;
+    })
+    .catch(function() {
+        document.getElementById('manual-led-status').textContent = 'ERRO: ESP32 offline ou IP incorreto';
+        document.getElementById('sb-esp32').textContent = 'OFFLINE';
+        document.getElementById('sb-esp32').className = 'warn';
+    });
+}
+
+function atualizarCoresDisplay() {
+    var r = document.querySelector(':root');
+    r.style.setProperty('--cor-entrada', config.corEntrada);
+    r.style.setProperty('--cor-pagamento', config.corPagamento);
+    document.getElementById('store-name-display').textContent = config.loja;
+    document.querySelector('.greeting').textContent = config.mensagem;
+}
+
+// Carrega config nos campos
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('cfg-esp32-ip').value = config.esp32Ip;
+    document.getElementById('cfg-esp32-port').value = config.esp32Port;
+    document.getElementById('cfg-loja').value = config.loja;
+    document.getElementById('cfg-mensagem').value = config.mensagem;
+    document.getElementById('cfg-led-tempo').value = config.ledTempo;
+    document.getElementById('cfg-led-brilho').value = config.ledBrilho;
+    document.getElementById('cfg-cor-entrada').value = config.corEntrada;
+    document.getElementById('cfg-cor-entrada-nome').value = config.corEntradaNome;
+    document.getElementById('cfg-cor-pagamento').value = config.corPagamento;
+    document.getElementById('cfg-cor-pagamento-nome').value = config.corPagamentoNome;
+    document.getElementById('cfg-cor-semvenda').value = config.corSemvenda;
+    document.getElementById('cfg-cor-semvenda-nome').value = config.corSemvendaNome;
+    renderLedStrips();
+    atualizarCoresDisplay();
+});
+
+// ========== PAINEL DE CONTROLE ==========
+function fecharPanel() { document.getElementById('panel').classList.remove('open'); }
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'c' || e.key === 'C') {
+        var p = document.getElementById('panel');
+        p.classList.toggle('open');
+    }
+});
+
+// ========== ESTADO DO SISTEMA ==========
+var sistema = {
+    clienteAtual: null,
+    ledAcesoDesde: null,
+    ledTimeout: null,
+    ultimoPagamento: null,
+    pagamentoDetectado: false,
+    simulacao: true
+};
+
+function toggleSimulacao() {
+    sistema.simulacao = document.getElementById('cfg-simulacao').checked;
+    document.getElementById('sb-esp32').textContent = sistema.simulacao ? 'SIMULAÇÃO' : 'BUSCANDO...';
+    document.getElementById('sb-esp32').className = sistema.simulacao ? 'active' : 'warn';
+}
+
+// ========== COMANDOS ESP32 (com fallback visual) ==========
+function comandoESP32(comando, extra) {
+    var url = 'http://' + config.esp32Ip + ':' + config.esp32Port + '/comando';
+    var body = { comando: comando };
+    if (extra) body = Object.assign(body, extra);
+
+    // Feedback visual na barra LED
+    var bar = document.getElementById('led-bar');
+    if (comando === 'cor' && extra && extra.cor) {
+        if (extra.cor === config.corEntrada) bar.className = 'led-bar amarelo';
+        else if (extra.cor === config.corPagamento) bar.className = 'led-bar verde';
+        else if (extra.cor === config.corSemvenda) bar.className = 'led-bar vermelho';
+    } else if (comando === 'apagar') {
+        bar.className = 'led-bar';
+    }
+
+    if (sistema.simulacao) {
+        document.getElementById('sb-esp32').textContent = 'SIM (' + comando + ')';
+        document.getElementById('sb-esp32').className = 'active';
+        return; // Não tenta conectar ESP32 no modo simulação
+    }
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    }).then(function(r) { 
+        document.getElementById('sb-esp32').textContent = 'OK (' + comando + ')';
+        document.getElementById('sb-esp32').className = 'active';
+    }).catch(function() {
+        document.getElementById('sb-esp32').textContent = 'OFFLINE';
+        document.getElementById('sb-esp32').className = 'warn';
+    });
+}
+
+// ========== DETECTAR ESP32 ==========
+function detectarESP32() {
+    if (sistema.simulacao) return;
+    var url = 'http://' + config.esp32Ip + ':' + config.esp32Port + '/status';
+    fetch(url, { signal: AbortSignal.timeout(2000) })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        document.getElementById('sb-esp32').textContent = 'CONECTADO';
+        document.getElementById('sb-esp32').className = 'active';
+        document.getElementById('cfg-simulacao').checked = false;
+        sistema.simulacao = false;
+    })
+    .catch(function() {
+        document.getElementById('sb-esp32').textContent = 'NÃO ENCONTRADO';
+        document.getElementById('sb-esp32').className = 'warn';
+    });
+}
+
+setInterval(detectarESP32, 5000);
+
+// ========== SIMULAR ENTRADA ==========
+function simularEntrada() {
+    var nome = document.getElementById('sim-nome').value.trim();
+    if (!nome) {
+        var nomes = ['MARIA SILVA','JOÃO SANTOS','ANA OLIVEIRA','PEDRO COSTA','CARLOS LIMA'];
+        nome = nomes[Math.floor(Math.random() * nomes.length)];
+    }
+    document.getElementById('sim-nome').value = '';
+
+    sistema.clienteAtual = nome;
+    sistema.ledAcesoDesde = Date.now();
+    sistema.ultimoPagamento = null;
+    sistema.pagamentoDetectado = false;
+
+    // Acende LED com cor de entrada
+    comandoESP32('cor', { cor: config.corEntrada, brilho: config.ledBrilho });
+    document.getElementById('led-status').className = 'led-dot on';
+    document.getElementById('led-status').style.background = config.corEntrada;
+    document.getElementById('led-status-text').textContent = 'LED aceso - aguardando pagamento';
+    document.getElementById('sb-led').textContent = 'ENTRADA';
+    document.getElementById('sb-cliente').textContent = nome;
+
+    // Timer para apagar LED após X minutos
+    if (sistema.ledTimeout) clearTimeout(sistema.ledTimeout);
+    sistema.ledTimeout = setTimeout(function() {
+        if (!sistema.pagamentoDetectado) {
+            comandoESP32('apagar');
+            document.getElementById('led-status').className = 'led-dot';
+            document.getElementById('led-status-text').textContent = 'LED apagado (timeout)';
+            document.getElementById('sb-led').textContent = 'OFF';
+            resetDisplay();
+        }
+    }, config.ledTempo * 60000);
+
+    mostrarBemVindo(nome);
+}
+
+function simularPagamento() {
+    sistema.ultimoPagamento = Date.now();
+    sistema.pagamentoDetectado = true;
+    comandoESP32('cor', { cor: config.corPagamento, brilho: config.ledBrilho });
+    document.getElementById('led-status').className = 'led-dot ok';
+    document.getElementById('led-status').style.background = config.corPagamento;
+    document.getElementById('led-status-text').textContent = 'Pagamento OK ✓';
+    document.getElementById('sb-led').textContent = 'PAGO';
+    document.getElementById('sb-venda').textContent = 'Simulado ' + new Date().toLocaleTimeString();
+
+    if (sistema.ledTimeout) clearTimeout(sistema.ledTimeout);
+    setTimeout(function() {
+        comandoESP32('apagar');
+        document.getElementById('led-status').className = 'led-dot';
+        document.getElementById('led-status-text').textContent = 'Aguardando...';
+        document.getElementById('sb-led').textContent = 'OFF';
+        resetDisplay();
+    }, 30000);
+}
+
+function resetTudo() {
+    sistema.clienteAtual = null;
+    sistema.pagamentoDetectado = false;
+    if (sistema.ledTimeout) clearTimeout(sistema.ledTimeout);
+    comandoESP32('apagar');
+    document.getElementById('led-bar').className = 'led-bar';
+    document.getElementById('led-status').className = 'led-dot';
+    document.getElementById('led-status-text').textContent = 'Aguardando...';
+    document.getElementById('sb-led').textContent = 'OFF';
+    document.getElementById('sb-cliente').textContent = '---';
+    resetDisplay();
+}
+
+// ========== DISPLAY DE BOAS-VINDAS ==========
+var displayTimeout = null;
+
+function mostrarBemVindo(nome) {
+    var idle = document.getElementById('idle');
+    var welcome = document.getElementById('welcome');
+
+    document.getElementById('customer-name-display').textContent = formatarNome(nome);
+    document.getElementById('customer-info-display').textContent = 'Loja ' + config.loja;
+    document.querySelector('.greeting').textContent = config.mensagem;
+
+    idle.classList.add('hidden');
+    welcome.classList.remove('hide');
+    welcome.classList.add('show');
+    welcome.style.display = 'block';
+    idle.style.display = 'none';
+
+    if (displayTimeout) clearTimeout(displayTimeout);
+    displayTimeout = setTimeout(resetDisplay, 15000);
+}
+
+function resetDisplay() {
+    var idle = document.getElementById('idle');
+    var welcome = document.getElementById('welcome');
+
+    welcome.classList.remove('show');
+    welcome.classList.add('hide');
+    idle.style.display = 'block';
+    idle.classList.remove('hidden');
+
+    setTimeout(function() {
+        welcome.style.display = 'none';
+        sistema.clienteAtual = null;
+    }, 800);
+}
+
+function formatarNome(nome) {
+    if (!nome) return '';
+    var partes = nome.trim().split(' ');
+    if (partes.length <= 2) return nome.toUpperCase();
+    return (partes[0] + ' ' + partes[partes.length - 1]).toUpperCase();
+}
+
+// ========== VERIFICAÇÃO DE VENDAS REAIS (E4) ==========
+var ultimaVendaId = null;
+
+function verificarVendasReais() {
+    var hoje = new Date();
+    var dataStr = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0') + '-' + String(hoje.getDate()).padStart(2,'0');
+    var body = JSON.stringify({ unidade: null, dataInicial: dataStr + ' 00:00:00', dataFinal: dataStr + ' 23:59:59' });
+
+    fetch('https://e4-dashboard-2lvk.onrender.com/api/vendas/listagem?pagina=1&quantidade=3', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: body
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var vendas = data.registros || [];
+        if (vendas.length > 0) {
+            var ultima = vendas[0];
+            document.getElementById('sb-venda').textContent = '#' + ultima.cupom + ' R$' + Number(ultima.valorLiquido).toFixed(2);
+
+            // Se tem cliente no LED e aparece venda nova
+            if (sistema.clienteAtual && !sistema.pagamentoDetectado && ultima.id !== ultimaVendaId) {
+                ultimaVendaId = ultima.id;
+                simularPagamento();
+            }
+        }
+    })
+    .catch(function() {});
+}
+
+// ========== VERIFICAÇÃO DE ENTRADAS REAIS (log-porta via API) ==========
+var ultimaEntradaId = null;
+
+function verificarEntradasReais() {
+    var hoje = new Date();
+    var d1 = String(hoje.getDate()).padStart(2,'0') + '/' + String(hoje.getMonth()+1).padStart(2,'0') + '/' + hoje.getFullYear();
+
+    fetch('https://e4-dashboard-2lvk.onrender.com/ocorrencias?inicio=' + d1 + '&fim=' + d1)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (!data.ok) return;
+        var logs = data.ocorrencias.filter(function(o) { return o.codigo === '41'; });
+        if (logs.length > 0) {
+            var ultimo = logs[0];
+            if (ultimo.id !== ultimaEntradaId) {
+                ultimaEntradaId = ultimo.id;
+                // Só ativa se não tiver cliente atual
+                if (!sistema.clienteAtual) {
+                    sistema.clienteAtual = ultimo.cliente;
+                    mostrarBemVindo(ultimo.cliente);
+                    comandoESP32('amarelo');
+                    document.getElementById('led-status').className = 'led-dot on';
+                    document.getElementById('sb-led').textContent = 'AMARELO (API)';
+                    document.getElementById('sb-cliente').textContent = ultimo.cliente;
+                }
+            }
+        }
+    })
+    .catch(function() {});
+}
+
+// ========== INICIAR ==========
+document.getElementById('store-name-display').textContent = config.loja;
+
+// Verifica vendas reais a cada 5 segundos
+setInterval(verificarVendasReais, 5000);
+// Verifica entradas reais a cada 5 segundos
+setInterval(verificarEntradasReais, 5000);
+
+// Exibe o painel brevemente no início para mostrar que está tudo certo
+setTimeout(function() {
+    document.getElementById('panel').classList.add('open');
+    document.getElementById('sb-esp32').textContent = 'Configurar IP';
+    document.getElementById('sb-esp32').className = 'warn';
+}, 500);
+</script>
+</body>
+</html>
