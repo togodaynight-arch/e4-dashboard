@@ -172,6 +172,41 @@ void apagarLEDs() {
     showTodas();
 }
 
+// ========== CONTROLE DE FITA INDIVIDUAL ==========
+void setPixelColorFita(int idxFita, int i, uint32_t cor) {
+    if (idxFita >= 0 && idxFita < NUM_FITAS && i < fitas[idxFita].qtdLeds) {
+        fitas[idxFita].strip->setPixelColor(i, cor);
+    }
+}
+
+void showFita(int idxFita) {
+    if (idxFita >= 0 && idxFita < NUM_FITAS) {
+        fitas[idxFita].strip->show();
+    }
+}
+
+void clearFita(int idxFita) {
+    if (idxFita >= 0 && idxFita < NUM_FITAS) {
+        fitas[idxFita].strip->clear();
+    }
+}
+
+void setFitaCor(int idxFita, String hex) {
+    if (idxFita < 0 || idxFita >= NUM_FITAS) return;
+    uint8_t r, g, b, w;
+    hexParaRGBW(hex, r, g, b, w);
+    for (int i = 0; i < fitas[idxFita].qtdLeds; i++) {
+        fitas[idxFita].strip->setPixelColor(i, corComBrilho(r, g, b, w, brilhoAtual));
+    }
+    fitas[idxFita].strip->show();
+}
+
+void apagarFita(int idxFita) {
+    if (idxFita < 0 || idxFita >= NUM_FITAS) return;
+    clearFita(idxFita);
+    showFita(idxFita);
+}
+
 // ========== EFEITOS ==========
 
 void efeitoSolido() {
@@ -351,6 +386,17 @@ void handleComando() {
                 velocidadeAtual = constrain(val.toInt(), 1, 100);
             }
 
+            // Extrai índice da fita (busca chave "fita":)
+            int idxFita = -1;
+            int idxFitaKey = body.indexOf("\"fita\":");
+            if (idxFitaKey != -1) {
+                int idxVal = idxFitaKey + 7; // posição logo após o ':'
+                int idxFim = body.indexOf(",", idxVal);
+                if (idxFim == -1) idxFim = body.indexOf("}", idxVal);
+                String val = body.substring(idxVal, idxFim);
+                idxFita = constrain(val.toInt(), 0, NUM_FITAS - 1);
+            }
+
             // Comando específico (busca chave "comando":)
             int idxCmd = body.indexOf("\"comando\":");
             bool temEfeito = body.indexOf("\"efeito\":") != -1;
@@ -366,18 +412,30 @@ void handleComando() {
                 }
             }
 
-            if (efeitoAtual != "apagado") ligado = true;
-            if (corAtual != "#000000" && efeitoAtual == "apagado") {
-                efeitoAtual = "solido";
-                ligado = true;
+            if (idxFita >= 0) {
+                // Teste de fita individual: aplica imediatamente na fita escolhida
+                if (corAtual == "#000000" || body.indexOf("\"apagar\"") != -1) {
+                    apagarFita(idxFita);
+                    resposta = "{\"ok\":true,\"fita\":" + String(idxFita) + ",\"acao\":\"apagar\"}";
+                } else {
+                    setFitaCor(idxFita, corAtual);
+                    resposta = "{\"ok\":true,\"fita\":" + String(idxFita) + ",\"cor\":\"" + corAtual + "\",\"brilho\":" + String(brilhoAtual) + "}";
+                }
+                code = 200;
+            } else {
+                if (efeitoAtual != "apagado") ligado = true;
+                if (corAtual != "#000000" && efeitoAtual == "apagado") {
+                    efeitoAtual = "solido";
+                    ligado = true;
+                }
+
+                resposta = "{\"ok\":true,\"cor\":\"" + corAtual + "\",\"efeito\":\"" + efeitoAtual + "\",\"brilho\":" + String(brilhoAtual) + "}";
+                code = 200;
+
+                // Reset de efeitos que usam fase
+                framePhase = 0;
+                chasePos = 0;
             }
-
-            resposta = "{\"ok\":true,\"cor\":\"" + corAtual + "\",\"efeito\":\"" + efeitoAtual + "\",\"brilho\":" + String(brilhoAtual) + "}";
-            code = 200;
-
-            // Reset de efeitos que usam fase
-            framePhase = 0;
-            chasePos = 0;
         }
         else {
             resposta = "{\"ok\":false,\"erro\":\"comando nao reconhecido\"}";

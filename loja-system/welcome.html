@@ -306,9 +306,52 @@ function renderLedStrips() {
                     '<input type="checkbox" class="str-habilitado" ' + (s.habilitado ? 'checked' : '') + '> On' +
                 '</label>' +
             '</div>' +
+            '<div class="row" style="margin-top:6px;gap:6px">' +
+                '<button type="button" class="btn-test-strip" onclick="testarFita(' + i + ')" style="flex:1;background:#d9b759;color:#000;border:none;border-radius:4px;padding:5px;font-size:10px;font-weight:600;cursor:pointer">💡 Testar Fita</button>' +
+                '<button type="button" class="btn-test-strip-off" onclick="testarFitaApagar(' + i + ')" style="flex:1;background:#444;color:#fff;border:none;border-radius:4px;padding:5px;font-size:10px;font-weight:600;cursor:pointer">⏹️ Apagar Fita</button>' +
+            '</div>' +
         '</div>';
     });
     el.innerHTML = html;
+}
+
+function testarFita(idx) {
+    var cor = document.getElementById('manual-cor') ? document.getElementById('manual-cor').value : '#ffaa00';
+    var url = 'http://' + config.esp32Ip + ':' + config.esp32Port + '/comando';
+    var body = { fita: idx, cor: cor, brilho: config.ledBrilho };
+
+    if (sistema.simulacao) {
+        alert('Desmarque "Modo Simulação" para testar a fita real.');
+        return;
+    }
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        document.getElementById('sb-esp32').textContent = 'Fita ' + (idx + 1) + ' testada';
+        document.getElementById('sb-esp32').className = 'active';
+    })
+    .catch(function() {
+        document.getElementById('sb-esp32').textContent = 'OFFLINE';
+        document.getElementById('sb-esp32').className = 'warn';
+    });
+}
+
+function testarFitaApagar(idx) {
+    var url = 'http://' + config.esp32Ip + ':' + config.esp32Port + '/comando';
+    var body = { fita: idx, comando: 'apagar' };
+
+    if (sistema.simulacao) return;
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    }).catch(function() {});
 }
 
 function enviarConfigESP32() {
