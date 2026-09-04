@@ -160,9 +160,9 @@ function fetchOcorrencias(inicio, fim) {
         var dataInicioStr = inicio || (String(hoje.getDate()).padStart(2,'0') + '/' + String(hoje.getMonth()+1).padStart(2,'0') + '/' + hoje.getFullYear());
         var dataFimStr = fim || dataInicioStr;
         var postData = querystring.stringify({
-            draw: '1', start: '0', length: '200',
+            draw: '1', start: '0', length: '5000',
             'order[0][column]': '8', 'order[0][dir]': 'desc',
-            'filtro-filtro-agrupamento': 'T',
+            'filtro-filtro-agrupamento': 'F',
             'filtro-filtro-tipo_data': '1',
             'filtro-filtro-data_inicio': dataInicioStr,
             'filtro-filtro-data_fim': dataFimStr,
@@ -225,7 +225,7 @@ function fetchEntradasPorta() {
         var hoje = new Date();
         var dataStr = String(hoje.getDate()).padStart(2,'0') + '/' + String(hoje.getMonth()+1).padStart(2,'0') + '/' + hoje.getFullYear();
         var postData = querystring.stringify({
-            draw: '1', start: '0', length: '500',
+            draw: '1', start: '0', length: '5000',
             'order[0][column]': '3', 'order[0][dir]': 'asc',
             'filtro-filtro-tipo_periodo': '1',
             'filtro-filtro-periodo_inicio': dataStr,
