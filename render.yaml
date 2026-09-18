@@ -32,5 +32,5 @@ services:
     envVars:
       - key: ADMIN_PASS
         value: togo2026
-      # Adicione no painel do Render a variavel CONFIG_DB_URL com a URL do seu Firebase Realtime Database.
-      # Ex: https://SEU-PROJETO-default-rtdb.firebaseio.com/
+      - key: CONFIG_DB_URL
+        value: https://loja-bemvindo-default-rtdb.firebaseio.com/
