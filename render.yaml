@@ -24,7 +24,7 @@ services:
     plan: free
 
   - type: web
-    name: boas-vindas
+    name: togotelas
     runtime: node
     buildCommand: ""
     startCommand: node server-welcome.js
