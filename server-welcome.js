@@ -2,7 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = 3002;
+const PORT = process.env.PORT || 3002;
 
 const server = http.createServer((req, res) => {
     if (req.url === '/' || req.url === '/welcome') {

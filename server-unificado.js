@@ -276,8 +276,68 @@ function handleEntradasPorta(req, res) {
     });
 }
 
+// ========== VENDAS (API com token) ==========
+function fetchVendas() {
+    return new Promise(function(resolve, reject) {
+        var hoje = new Date();
+        var dataStr = hoje.getFullYear() + '-' + String(hoje.getMonth()+1).padStart(2,'0') + '-' + String(hoje.getDate()).padStart(2,'0');
+        var postData = JSON.stringify({ unidade: null, dataInicial: dataStr + ' 00:00:00', dataFinal: dataStr + ' 23:59:59' });
+        var options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Cliente-Id': CLIENT_ID,
+                'Authorization': 'Bearer ' + TOKEN,
+                'Content-Length': Buffer.byteLength(postData)
+            }
+        };
+        var req = https.request(API_BASE + '/api/vendas/listagem?pagina=1&quantidade=3', options, function(res) {
+            var body = '';
+            res.on('data', function(c) { body += c; });
+            res.on('end', function() {
+                try { resolve(JSON.parse(body)); } catch(e) { reject('Erro parse vendas'); }
+            });
+        });
+        req.on('error', function(e) { reject(e.message); });
+        req.write(postData);
+        req.end();
+    });
+}
+
+// ========== ENDPOINTS PUBLICOS (sem senha, so pra tela de boas-vindas) ==========
+function handlePublic(req, res) {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' });
+
+    if (req.url.startsWith('/public/entrada')) {
+        fetchOcorrencias().then(function(dados) {
+            var logs = dados.filter(function(o) { return (o.cod_operacao || o.ws_ocorrencias_frente_caixa || '') === '41'; });
+            var ultimo = logs[0] || null;
+            res.end(JSON.stringify({ ok: true, entrada: ultimo ? { id: ultimo.id, cliente: ultimo.cliente, data: ultimo.data_ocorrencia } : null }));
+        }).catch(function(err) {
+            res.end(JSON.stringify({ ok: false, error: String(err) }));
+        });
+        return;
+    }
+
+    if (req.url.startsWith('/public/venda')) {
+        fetchVendas().then(function(data) {
+            var vendas = data.registros || [];
+            var ultima = vendas[0] || null;
+            res.end(JSON.stringify({ ok: true, venda: ultima ? { id: ultima.id, cupom: ultima.cupom, valorLiquido: ultima.valorLiquido } : null }));
+        }).catch(function(err) {
+            res.end(JSON.stringify({ ok: false, error: String(err) }));
+        });
+        return;
+    }
+
+    res.end(JSON.stringify({ ok: false, error: 'rota desconhecida' }));
+}
+
 // ========== MAIN SERVER ==========
 const server = http.createServer((req, res) => {
+    // Endpoints publicos para a tela de boas-vindas (sem Basic Auth)
+    if (req.url.startsWith('/public/')) { handlePublic(req, res); return; }
+
     // Basic Auth
     var auth = req.headers['authorization'];
     if (!auth || !auth.startsWith('Basic ')) {

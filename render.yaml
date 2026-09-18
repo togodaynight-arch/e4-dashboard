@@ -22,3 +22,10 @@ services:
     buildCommand: ""
     startCommand: node relatorios-dia/server.js
     plan: free
+
+  - type: web
+    name: boas-vindas
+    runtime: node
+    buildCommand: ""
+    startCommand: node server-welcome.js
+    plan: free
