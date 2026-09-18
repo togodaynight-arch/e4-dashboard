@@ -60,6 +60,9 @@ textarea{resize:vertical;min-height:56px}
 </div>
 
 <script>
+var FIREBASE_URL = 'https://loja-bemvindo-default-rtdb.firebaseio.com/config.json';
+var SENHA = 'togo2026';
+
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function msg(t, ok){var m=document.getElementById('msg');m.textContent=t;m.className='msg '+(ok?'ok':'erro');}
 
@@ -77,9 +80,10 @@ function addPromo(titulo, descricao, cor){
 }
 
 function carregar(){
-    fetch('/api/config')
+    fetch(FIREBASE_URL)
     .then(function(r){return r.json()})
     .then(function(c){
+        if(!c){c={};}
         document.getElementById('loja').value=c.loja||'';
         document.getElementById('mensagem').value=c.mensagem||'';
         document.getElementById('promos').innerHTML='';
@@ -90,18 +94,16 @@ function carregar(){
 }
 
 function salvar(){
+    if(document.getElementById('senha').value!==SENHA){msg('Senha incorreta.',false);return;}
     var promos=[];
     document.querySelectorAll('.promo-item').forEach(function(el){
         var t=el.querySelector('.p-titulo').value.trim();
         if(t)promos.push({titulo:t,descricao:el.querySelector('.p-desc').value.trim(),cor:el.querySelector('.p-cor').value});
     });
-    var body={senha:document.getElementById('senha').value,loja:document.getElementById('loja').value.trim(),mensagem:document.getElementById('mensagem').value.trim(),promocoes:promos};
-    fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    var body={loja:document.getElementById('loja').value.trim(),mensagem:document.getElementById('mensagem').value.trim(),promocoes:promos};
+    fetch(FIREBASE_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(function(r){return r.json()})
-    .then(function(d){
-        if(d.ok)msg('Salvo! A TV vai atualizar em segundos.',true);
-        else msg('Erro: '+(d.error||'senha incorreta'),false);
-    })
+    .then(function(){msg('Salvo! A TV vai atualizar em segundos.',true)})
     .catch(function(){msg('Erro de conexão.',false)});
 }
 

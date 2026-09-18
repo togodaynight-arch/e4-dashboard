@@ -147,6 +147,7 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 <script>
 // ========== API ==========
 var API_BASE = 'https://e4-dashboard-2lvk.onrender.com'; // dados de entrada de clientes
+var FIREBASE_URL = 'https://loja-bemvindo-default-rtdb.firebaseio.com/config.json'; // conteúdo (loja/promoções)
 
 // Conteúdo (loja, mensagem, promoções) vem do servidor
 var conteudo = { loja: 'TRANS BUS', mensagem: 'BEM-VINDO', promocoes: [] };
@@ -230,7 +231,7 @@ document.addEventListener('keydown', function(e) {
 
 // ========== CONTEÚDO (do servidor) ==========
 function carregarConteudo() {
-    fetch('/api/config')
+    fetch(FIREBASE_URL)
     .then(function(r) { return r.json(); })
     .then(function(c) {
         var antes = JSON.stringify(conteudo);
