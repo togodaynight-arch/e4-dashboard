@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editar Tela de Boas-vindas</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Montserrat',sans-serif;background:#0a0a12;color:#fff;min-height:100vh;padding:20px}
+.wrap{max-width:480px;margin:0 auto}
+h1{font-size:22px;color:#d9b759;margin-bottom:4px;letter-spacing:1px}
+p.sub{color:#666;font-size:12px;margin-bottom:20px}
+.card{background:#15151f;border:1px solid #26262f;border-radius:12px;padding:16px;margin-bottom:14px}
+.card h2{font-size:13px;color:#d9b759;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+label{display:block;color:#999;font-size:10px;text-transform:uppercase;margin-bottom:4px}
+input,textarea{width:100%;padding:10px;margin-bottom:12px;background:#1a1a28;border:1px solid #333;color:#fff;border-radius:6px;font-size:14px;font-family:inherit}
+textarea{resize:vertical;min-height:56px}
+.promo-item{background:#11111a;border:1px solid #222;padding:12px;border-radius:8px;margin-bottom:10px}
+.promo-item .row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.promo-item input[type="color"]{width:42px;height:36px;padding:0;border:none;cursor:pointer;background:none;flex-shrink:0;margin-bottom:0}
+.promo-item input[type="text"]{margin-bottom:0}
+.btn{display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px}
+.btn-add{background:#d9b759;color:#000}
+.btn-save{background:#3b82f6;color:#fff}
+.btn-del{background:#333;color:#999;font-size:11px;padding:5px;width:auto}
+.msg{padding:12px;border-radius:8px;font-size:13px;margin-bottom:12px;display:none}
+.msg.ok{display:block;background:#0f2b1c;color:#34d399;border:1px solid #14532d}
+.msg.erro{display:block;background:#2b0f0f;color:#f87171;border:1px solid #7f1d1d}
+.senha-box input{margin-bottom:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+    <h1>Editar Tela de Boas-vindas</h1>
+    <p class="sub">As mudanças aparecem na TV em alguns segundos.</p>
+
+    <div class="msg" id="msg"></div>
+
+    <div class="card senha-box">
+        <h2>Senha</h2>
+        <input type="password" id="senha" placeholder="Digite a senha">
+    </div>
+
+    <div class="card">
+        <h2>Loja</h2>
+        <label>Nome da Loja</label>
+        <input type="text" id="loja" placeholder="TRANS BUS">
+        <label>Mensagem de Boas-vindas</label>
+        <input type="text" id="mensagem" placeholder="BEM-VINDO">
+    </div>
+
+    <div class="card">
+        <h2>Promoções</h2>
+        <div id="promos"></div>
+        <button class="btn btn-add" onclick="addPromo()">+ Adicionar Promoção</button>
+    </div>
+
+    <button class="btn btn-save" onclick="salvar()">💾 Salvar</button>
+</div>
+
+<script>
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function msg(t, ok){var m=document.getElementById('msg');m.textContent=t;m.className='msg '+(ok?'ok':'erro');}
+
+function addPromo(titulo, descricao, cor){
+    var d=document.createElement('div');
+    d.className='promo-item';
+    d.innerHTML =
+        '<div class="row">' +
+            '<input type="color" class="p-cor" value="'+(cor||'#d9b759')+'">' +
+            '<input type="text" class="p-titulo" placeholder="Título" value="'+esc(titulo)+'">' +
+            '<button class="btn btn-del" onclick="this.parentElement.parentElement.remove()">✕</button>' +
+        '</div>' +
+        '<textarea class="p-desc" placeholder="Descrição">'+esc(descricao)+'</textarea>';
+    document.getElementById('promos').appendChild(d);
+}
+
+function carregar(){
+    fetch('/api/config')
+    .then(function(r){return r.json()})
+    .then(function(c){
+        document.getElementById('loja').value=c.loja||'';
+        document.getElementById('mensagem').value=c.mensagem||'';
+        document.getElementById('promos').innerHTML='';
+        (c.promocoes||[]).forEach(function(p){addPromo(p.titulo,p.descricao,p.cor)});
+        if(!c.promocoes||c.promocoes.length===0)addPromo();
+    })
+    .catch(function(){msg('Erro ao carregar a configuração.',false)});
+}
+
+function salvar(){
+    var promos=[];
+    document.querySelectorAll('.promo-item').forEach(function(el){
+        var t=el.querySelector('.p-titulo').value.trim();
+        if(t)promos.push({titulo:t,descricao:el.querySelector('.p-desc').value.trim(),cor:el.querySelector('.p-cor').value});
+    });
+    var body={senha:document.getElementById('senha').value,loja:document.getElementById('loja').value.trim(),mensagem:document.getElementById('mensagem').value.trim(),promocoes:promos};
+    fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    .then(function(r){return r.json()})
+    .then(function(d){
+        if(d.ok)msg('Salvo! A TV vai atualizar em segundos.',true);
+        else msg('Erro: '+(d.error||'senha incorreta'),false);
+    })
+    .catch(function(){msg('Erro de conexão.',false)});
+}
+
+carregar();
+</script>
+</body>
+</html>

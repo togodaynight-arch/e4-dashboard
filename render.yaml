@@ -29,3 +29,8 @@ services:
     buildCommand: ""
     startCommand: node server-welcome.js
     plan: free
+    envVars:
+      - key: ADMIN_PASS
+        value: togo2026
+      # Adicione no painel do Render a variavel CONFIG_DB_URL com a URL do seu Firebase Realtime Database.
+      # Ex: https://SEU-PROJETO-default-rtdb.firebaseio.com/

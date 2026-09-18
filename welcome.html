@@ -10,20 +10,17 @@
 html,body{width:100%;height:100%}
 body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#060612;background:radial-gradient(ellipse at 50% 40%, #1a1a3e 0%, #0d0d22 45%, #060612 100%)}
 
-/* ===== STAGE (rotacao) e SCALER (zoom) ===== */
 .stage{position:fixed;top:0;left:0;width:100vw;height:100vh;transform-origin:top left;transition:transform .3s}
 .stage.rot90{width:100vh;height:100vw;transform:translateX(100vw) rotate(90deg)}
 .stage.rot180{transform:translate(100vw,100vh) rotate(180deg)}
 .stage.rot270{width:100vh;height:100vw;transform:translateY(100vh) rotate(270deg)}
 .scaler{position:absolute;inset:0;transform-origin:center center;transition:transform .3s}
 
-/* ===== TELA OCIOSA ===== */
 .idle{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:1;transition:opacity 0.5s}
 .idle.hidden{opacity:0;pointer-events:none}
 .idle-logo{font-size:var(--fs-idle-logo,60px);font-weight:900;color:#d9b759;letter-spacing:6px;margin-bottom:16px;text-transform:uppercase;text-shadow:0 0 40px rgba(217,183,89,0.25)}
 .idle-text{font-size:20px;letter-spacing:5px;color:#7a86b8;text-transform:uppercase}
 
-/* ===== PROMOÇÕES ===== */
 .promo{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px;opacity:0;transition:opacity 0.6s}
 .promo.show{display:flex;opacity:1}
 .promo-tag{font-size:18px;letter-spacing:8px;color:var(--cor,#d9b759);text-transform:uppercase;margin-bottom:24px;font-weight:600}
@@ -31,7 +28,6 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 .promo-desc{font-size:var(--fs-promo-desc,32px);color:#c9d0ee;letter-spacing:2px;font-weight:300;max-width:80%}
 .promo-glow{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .6s;background:radial-gradient(circle at 50% 35%, var(--cor,rgba(217,183,89,0.25)) 0%, transparent 55%)}
 
-/* ===== BOAS-VINDAS ===== */
 .welcome{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0;transform:scale(0.85);transition:all 0.7s cubic-bezier(0.175,0.885,0.32,1.275)}
 .welcome.show{display:flex;opacity:1;transform:scale(1)}
 .logo{font-size:var(--fs-logo,24px);font-weight:300;letter-spacing:8px;color:#d9b759;margin-bottom:40px;text-transform:uppercase}
@@ -39,34 +35,27 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 .name{font-size:var(--fs-nome,100px);font-weight:900;letter-spacing:4px;color:#fff;line-height:1.1;text-shadow:0 0 60px rgba(217,183,89,0.3);margin-bottom:16px}
 .store{font-size:28px;font-weight:600;color:#d9b759;letter-spacing:4px}
 
-/* ===== BOTAO EDITAR ===== */
 .edit-btn{position:fixed;top:12px;right:12px;width:40px;height:40px;border-radius:50%;border:1px solid #333;background:rgba(20,20,35,0.85);color:#d9b759;font-size:20px;cursor:pointer;z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0.35;transition:opacity .2s}
 .edit-btn:hover{opacity:1}
 
-/* ===== PAINEL ===== */
 .panel{position:fixed;top:12px;right:12px;background:rgba(18,18,32,0.97);border:1px solid #333;border-radius:12px;padding:16px;width:350px;max-height:88vh;overflow-y:auto;z-index:1001;display:none;font-size:12px}
 .panel.open{display:block}
 .panel h4{color:#d9b759;margin:0 0 10px;font-size:14px}
 .panel label{display:block;color:#999;margin-bottom:2px;font-size:10px;text-transform:uppercase}
 .panel input,.panel textarea{width:100%;padding:7px 8px;margin-bottom:10px;background:#1a1a2e;border:1px solid #333;color:#fff;border-radius:5px;font-size:12px;font-family:inherit}
-.panel textarea{resize:vertical;min-height:44px}
 .panel button{width:100%;padding:8px;margin:4px 0;border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:0.2s}
 .panel button:hover{opacity:0.9}
-.panel .btn-save{background:#3b82f6}
 .panel .btn-simulate{background:#d9b759;color:#000}
-.panel .btn-add{background:#d9b759;color:#000;font-size:11px;padding:6px;margin-bottom:8px}
-.panel .btn-del{background:#333;color:#999;font-size:10px;padding:4px;width:auto}
 .panel .btn-fechar{background:#444;margin-top:8px}
 .panel details{margin-bottom:8px}
 .panel summary{color:#d9b759;cursor:pointer;font-size:12px;font-weight:600;margin-bottom:8px}
-.panel .promo-item{background:#111;padding:10px;border-radius:6px;margin-bottom:8px}
-.panel .promo-item .row{display:flex;gap:6px;align-items:center}
-.panel .promo-item input[type="color"]{width:40px;height:30px;padding:0;border:none;cursor:pointer;background:none;flex-shrink:0}
 .panel .rot-btns{display:flex;gap:6px;margin-bottom:10px}
 .panel .rot-btns button{flex:1;background:#1a1a2e;border:1px solid #333;padding:8px;font-size:12px;font-weight:700}
 .panel .rot-btns button.active{background:#d9b759;color:#000;border-color:#d9b759}
 .panel input[type="range"]{padding:0;margin-bottom:12px;accent-color:#d9b759;cursor:pointer}
 .panel .range-val{color:#d9b759;font-weight:700}
+.panel .note{background:#111;border:1px solid #2a2a3a;border-radius:6px;padding:10px;color:#999;font-size:11px;line-height:1.6;margin-bottom:10px}
+.panel .note b{color:#d9b759}
 .panel .status-bar{margin-top:10px;padding:8px;background:#111;border-radius:6px;color:#666;font-size:10px;line-height:1.6}
 .panel .status-bar b{color:#10b981}
 .hint{position:fixed;bottom:10px;right:10px;color:#333;font-size:10px;font-family:monospace}
@@ -78,20 +67,17 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
     <div class="scaler" id="scaler">
         <div class="promo-glow" id="promo-glow"></div>
 
-        <!-- TELA OCIOSA -->
         <div class="idle" id="idle">
             <div class="idle-logo" id="idle-logo">TRANS BUS</div>
             <div class="idle-text">Aguardando clientes</div>
         </div>
 
-        <!-- PROMOÇÕES -->
         <div class="promo" id="promo">
             <div class="promo-tag">PROMOÇÃO</div>
             <div class="promo-titulo" id="promo-titulo"></div>
             <div class="promo-desc" id="promo-desc"></div>
         </div>
 
-        <!-- BOAS-VINDAS -->
         <div class="welcome" id="welcome">
             <div class="logo" id="store-name-display">Loja</div>
             <div class="greeting" id="greeting-display">BEM-VINDO</div>
@@ -101,12 +87,12 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
     </div>
 </div>
 
-<!-- BOTAO EDITAR -->
-<button class="edit-btn" id="edit-btn" onclick="abrirPanel()" title="Editar tela">⚙</button>
+<button class="edit-btn" id="edit-btn" onclick="abrirPanel()" title="Ajustar tela">⚙</button>
 
-<!-- PAINEL DE CONFIGURAÇÃO -->
 <div class="panel" id="panel">
-    <h4>⚙️ Configuração</h4>
+    <h4>⚙️ Ajustes da Tela</h4>
+
+    <div class="note">Promoções e nome da loja são editados pelo <b>painel admin</b> (celular). Aqui você ajusta só o tamanho e a posição da tela.</div>
 
     <details open>
     <summary>🖥️ Tela</summary>
@@ -141,27 +127,11 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
     </details>
 
     <details open>
-    <summary>🏪 Loja</summary>
-    <label>Nome da Loja</label>
-    <input type="text" id="cfg-loja" placeholder="TRANS BUS">
-    <label>Mensagem de Boas-vindas</label>
-    <input type="text" id="cfg-mensagem" placeholder="BEM-VINDO">
-    </details>
-
-    <details open>
-    <summary>🎁 Promoções</summary>
-    <div id="promocoes-list"></div>
-    <button class="btn-add" onclick="addPromocao()">+ Adicionar Promoção</button>
-    </details>
-
-    <button class="btn-save" onclick="salvarConfig()">💾 Salvar Configuração</button>
-
-    <details open>
     <summary>🧪 Teste</summary>
     <label>Nome do cliente</label>
     <input type="text" id="sim-nome" placeholder="FULANO DE TAL">
     <button class="btn-simulate" onclick="simularEntrada()">🚶 Simular Entrada</button>
-    <button class="btn-fechar" onclick="voltarIdle()" style="width:100%">🔄 Voltar ao início</button>
+    <button class="btn-fechar" onclick="voltarIdle()">🔄 Voltar ao início</button>
     </details>
 
     <div class="status-bar" id="status-bar">
@@ -172,18 +142,16 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
     <button class="btn-fechar" onclick="fecharPanel()">Fechar Painel</button>
 </div>
 
-<div class="hint">Pressione <b>C</b> para abrir o painel</div>
+<div class="hint">Pressione <b>C</b> para abrir os ajustes</div>
 
 <script>
-// ========== CONFIGURAÇÃO ==========
-var API_BASE = 'https://e4-dashboard-2lvk.onrender.com';
+// ========== API ==========
+var API_BASE = 'https://e4-dashboard-2lvk.onrender.com'; // dados de entrada de clientes
 
-var config = {
-    loja: localStorage.getItem('cfg-loja') || 'TRANS BUS',
-    mensagem: localStorage.getItem('cfg-mensagem') || 'BEM-VINDO',
-    promocoes: JSON.parse(localStorage.getItem('cfg-promocoes') || '[{"titulo":"OFERTA DO DIA","descricao":"Confira as novidades da nossa loja","cor":"#d9b759"},{"titulo":"ACEITAMOS PIX","descricao":"Pagamento rápido e seguro","cor":"#10b981"}]')
-};
+// Conteúdo (loja, mensagem, promoções) vem do servidor
+var conteudo = { loja: 'TRANS BUS', mensagem: 'BEM-VINDO', promocoes: [] };
 
+// Ajustes de tela (só deste aparelho, salvos no navegador)
 var tela = {
     rotacao: parseInt(localStorage.getItem('cfg-rotacao') || '0'),
     zoom: parseInt(localStorage.getItem('cfg-zoom') || '100'),
@@ -214,17 +182,22 @@ function aplicarTela() {
         stage.style.setProperty(FS_KEYS[k], tela[k] + 'px');
     });
 
-    // marca botão ativo da rotação
     document.querySelectorAll('#rot-btns button').forEach(function(b) {
         b.classList.toggle('active', parseInt(b.dataset.r) === tela.rotacao);
     });
 }
 
-function setRotacao(g) { tela.rotacao = g; aplicarTela(); }
-function setZoom(v) { tela.zoom = parseInt(v); document.getElementById('zoom-val').textContent = v + '%'; aplicarTela(); }
+function setRotacao(g) { tela.rotacao = g; localStorage.setItem('cfg-rotacao', g); aplicarTela(); }
+function setZoom(v) {
+    tela.zoom = parseInt(v);
+    document.getElementById('zoom-val').textContent = v + '%';
+    localStorage.setItem('cfg-zoom', tela.zoom);
+    aplicarTela();
+}
 function setFont(key, valId, v, unit) {
     tela[key] = parseInt(v);
     document.getElementById(valId).textContent = v + unit;
+    localStorage.setItem('cfg-' + key, tela[key]);
     aplicarTela();
 }
 
@@ -250,88 +223,35 @@ function carregarControlesTela() {
 function abrirPanel() { document.getElementById('panel').classList.add('open'); }
 function fecharPanel() { document.getElementById('panel').classList.remove('open'); }
 document.addEventListener('keydown', function(e) {
-    // Não fecha o painel quando a pessoa está digitando num campo
     var tag = (e.target.tagName || '').toLowerCase();
-    if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) {
-        return;
-    }
-    if (e.key === 'c' || e.key === 'C') {
-        document.getElementById('panel').classList.toggle('open');
-    }
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
+    if (e.key === 'c' || e.key === 'C') document.getElementById('panel').classList.toggle('open');
 });
 
-function salvarConfig() {
-    config.loja = document.getElementById('cfg-loja').value;
-    config.mensagem = document.getElementById('cfg-mensagem').value;
-
-    var promos = [];
-    document.querySelectorAll('.promo-item').forEach(function(el) {
-        var t = el.querySelector('.p-titulo').value.trim();
-        if (t) {
-            promos.push({
-                titulo: t,
-                descricao: el.querySelector('.p-desc').value.trim(),
-                cor: el.querySelector('.p-cor').value
-            });
+// ========== CONTEÚDO (do servidor) ==========
+function carregarConteudo() {
+    fetch('/api/config')
+    .then(function(r) { return r.json(); })
+    .then(function(c) {
+        var antes = JSON.stringify(conteudo);
+        conteudo = c || conteudo;
+        document.getElementById('idle-logo').textContent = conteudo.loja;
+        document.getElementById('store-name-display').textContent = conteudo.loja;
+        if (JSON.stringify(conteudo) !== antes) {
+            if (modo !== 'welcome') { mostrarIdle(); iniciarCarrossel(); }
         }
-    });
-    config.promocoes = promos;
-
-    localStorage.setItem('cfg-loja', config.loja);
-    localStorage.setItem('cfg-mensagem', config.mensagem);
-    localStorage.setItem('cfg-promocoes', JSON.stringify(config.promocoes));
-
-    Object.keys(tela).forEach(function(k) { localStorage.setItem('cfg-' + k, tela[k]); });
-
-    document.getElementById('idle-logo').textContent = config.loja;
-    document.getElementById('store-name-display').textContent = config.loja;
-    renderPromocoes();
-    fecharPanel();
-}
-
-// ========== PROMOÇÕES (painel) ==========
-function addPromocao() {
-    config.promocoes.push({ titulo: '', descricao: '', cor: '#d9b759' });
-    renderPromocoes();
-}
-
-function removerPromocao(idx) {
-    config.promocoes.splice(idx, 1);
-    renderPromocoes();
-}
-
-function escaparHtml(s) {
-    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function renderPromocoes() {
-    var el = document.getElementById('promocoes-list');
-    if (!config.promocoes || config.promocoes.length === 0) {
-        el.innerHTML = '<div style="color:#666;font-size:11px;margin-bottom:8px">Nenhuma promoção. Clique em "+ Adicionar Promoção".</div>';
-        return;
-    }
-    var html = '';
-    config.promocoes.forEach(function(p, i) {
-        html += '<div class="promo-item">' +
-            '<div class="row" style="margin-bottom:6px">' +
-                '<input type="color" class="p-cor" value="' + (p.cor || '#d9b759') + '">' +
-                '<input type="text" class="p-titulo" value="' + escaparHtml(p.titulo) + '" placeholder="Título" style="flex:1;margin:0">' +
-                '<button class="btn-del" onclick="removerPromocao(' + i + ')">✕</button>' +
-            '</div>' +
-            '<textarea class="p-desc" placeholder="Descrição">' + escaparHtml(p.descricao) + '</textarea>' +
-        '</div>';
-    });
-    el.innerHTML = html;
+    })
+    .catch(function() {});
 }
 
 // ========== CARROSSEL DE PROMOÇÕES ==========
 var promoIndex = 0;
 var carouselTimer = null;
-var modo = 'idle'; // 'idle' | 'promo' | 'welcome'
+var modo = 'idle';
 
 function proximoSlide() {
     if (modo !== 'idle' && modo !== 'promo') return;
-    var promos = config.promocoes || [];
+    var promos = conteudo.promocoes || [];
     if (promos.length === 0) { mostrarIdle(); return; }
     if (modo === 'idle') { mostrarPromo(0); promoIndex = 0; }
     else {
@@ -349,7 +269,7 @@ function mostrarIdle() {
 }
 
 function mostrarPromo(i) {
-    var p = config.promocoes[i];
+    var p = conteudo.promocoes[i];
     if (!p) { mostrarIdle(); return; }
     modo = 'promo';
     var cor = p.cor || '#d9b759';
@@ -382,9 +302,9 @@ function mostrarBemVindo(nome) {
     if (carouselTimer) clearInterval(carouselTimer);
 
     document.getElementById('customer-name-display').textContent = formatarNome(nome);
-    document.getElementById('customer-info-display').textContent = 'Loja ' + config.loja;
-    document.getElementById('store-name-display').textContent = config.loja;
-    document.getElementById('greeting-display').textContent = config.mensagem;
+    document.getElementById('customer-info-display').textContent = 'Loja ' + conteudo.loja;
+    document.getElementById('store-name-display').textContent = conteudo.loja;
+    document.getElementById('greeting-display').textContent = conteudo.mensagem;
 
     document.getElementById('idle').classList.add('hidden');
     document.getElementById('promo').classList.remove('show');
@@ -417,7 +337,7 @@ function simularEntrada() {
     fecharPanel();
 }
 
-// ========== ENTRADAS REAIS (via API pública) ==========
+// ========== ENTRADAS REAIS ==========
 var ultimaEntradaId = null;
 
 function verificarEntradasReais() {
@@ -429,27 +349,19 @@ function verificarEntradasReais() {
         document.getElementById('sb-entrada').textContent = e.cliente || '---';
         if (e.id !== ultimaEntradaId) {
             ultimaEntradaId = e.id;
-            if (modo !== 'welcome' && e.cliente) {
-                mostrarBemVindo(e.cliente);
-            }
+            if (modo !== 'welcome' && e.cliente) mostrarBemVindo(e.cliente);
         }
     })
     .catch(function() {});
 }
 
 // ========== INICIALIZAÇÃO ==========
-document.getElementById('idle-logo').textContent = config.loja;
-document.getElementById('store-name-display').textContent = config.loja;
-
-document.getElementById('cfg-loja').value = config.loja;
-document.getElementById('cfg-mensagem').value = config.mensagem;
-renderPromocoes();
 carregarControlesTela();
-
+carregarConteudo();
 mostrarIdle();
 iniciarCarrossel();
 
-// Verifica entradas reais a cada 5 segundos
+setInterval(carregarConteudo, 10000);
 setInterval(verificarEntradasReais, 5000);
 </script>
 </body>

@@ -6,3 +6,4 @@ node_modules/
 *.xlsx
 /tmp/
 server.log
+welcome-config.json
