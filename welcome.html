@@ -28,6 +28,10 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 .promo-desc{font-size:var(--fs-promo-desc,32px);color:#c9d0ee;letter-spacing:2px;font-weight:300;max-width:80%}
 .promo-glow{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .6s;background:radial-gradient(circle at 50% 35%, var(--cor,rgba(217,183,89,0.25)) 0%, transparent 55%)}
 
+.imagem{position:fixed;inset:0;display:none;opacity:0;transition:opacity .6s;background:#000}
+.imagem.show{display:block;opacity:1}
+.imagem img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+
 .clima{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0;transition:opacity .6s}
 .clima.show{display:flex;opacity:1}
 .clima-emoji{font-size:70px;margin-bottom:10px}
@@ -89,6 +93,10 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
             <div class="promo-desc" id="promo-desc"></div>
         </div>
 
+        <div class="imagem" id="imagem">
+            <img id="imagem-img" src="" alt="">
+        </div>
+
         <div class="clima" id="clima">
             <div class="clima-tag">Clima agora</div>
             <div class="clima-emoji" id="clima-emoji">🌡️</div>
@@ -114,7 +122,7 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 <div class="panel" id="panel">
     <h4>⚙️ Ajustes da Tela</h4>
 
-    <div class="note">Promoções, clima e vídeos são editados pelo <b>painel admin</b> (celular). Aqui você ajusta só tamanho e posição da tela.</div>
+    <div class="note">Conteúdo (telas, vídeos, tempo) é editado pelo <b>painel admin</b> no celular. Aqui você ajusta só tamanho e posição da tela.</div>
 
     <details open>
     <summary>🖥️ Tela</summary>
@@ -167,12 +175,11 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 <div class="hint">Pressione <b>C</b> para abrir os ajustes</div>
 
 <script>
-// ========== CONFIG ==========
-var API_BASE = 'https://e4-dashboard-2lvk.onrender.com'; // entrada de clientes
+var API_BASE = 'https://e4-dashboard-2lvk.onrender.com';
 var FIREBASE_URL = 'https://loja-bemvindo-default-rtdb.firebaseio.com/config.json';
-var LAT = -29.95111, LON = -51.09389; // Cachoeirinha - RS
+var LAT = -29.95111, LON = -51.09389;
 
-var conteudo = { loja:'TRANS BUS', mensagem:'BEM-VINDO', cidade:'Cachoeirinha - RS', promocoes:[], videos:[] };
+var conteudo = { loja:'TRANS BUS', mensagem:'BEM-VINDO', cidade:'Cachoeirinha - RS', slides:[] };
 
 var tela = {
     rotacao: parseInt(localStorage.getItem('cfg-rotacao') || '0'),
@@ -185,7 +192,6 @@ var tela = {
     fsPromoDesc: parseInt(localStorage.getItem('cfg-fs-promo-desc') || '32')
 };
 
-// ========== TELA ==========
 var FS_KEYS = { fsNome:'--fs-nome', fsSaudacao:'--fs-saudacao', fsLogo:'--fs-logo', fsIdleLogo:'--fs-idle-logo', fsPromoTitulo:'--fs-promo-titulo', fsPromoDesc:'--fs-promo-desc' };
 
 function aplicarTela() {
@@ -214,7 +220,6 @@ function carregarControlesTela() {
     aplicarTela();
 }
 
-// ========== PAINEL ==========
 function abrirPanel(){ document.getElementById('panel').classList.add('open'); }
 function fecharPanel(){ document.getElementById('panel').classList.remove('open'); }
 document.addEventListener('keydown', function(e){
@@ -223,18 +228,25 @@ document.addEventListener('keydown', function(e){
     if (e.key === 'c' || e.key === 'C') document.getElementById('panel').classList.toggle('open');
 });
 
-// ========== CONTEÚDO (Firebase) ==========
+// ========== CONTEÚDO ==========
+var SLIDES_DEFAULT = [
+    { tipo:'promo', titulo:'OFERTA DO DIA', descricao:'Confira as novidades da nossa loja', cor:'#d9b759', tempo:8 },
+    { tipo:'promo', titulo:'ACEITAMOS PIX', descricao:'Pagamento rápido e seguro', cor:'#10b981', tempo:8 },
+    { tipo:'clima', tempo:8 }
+];
+
 function carregarConteudo() {
     fetch(FIREBASE_URL)
     .then(function(r){ return r.json(); })
     .then(function(c){
         var antes = JSON.stringify(conteudo);
         conteudo = c || conteudo;
+        if (!conteudo.slides || conteudo.slides.length === 0) conteudo.slides = SLIDES_DEFAULT;
         document.getElementById('idle-logo').textContent = conteudo.loja;
         document.getElementById('store-name-display').textContent = conteudo.loja;
         document.getElementById('clima-cidade').textContent = conteudo.cidade || 'Cachoeirinha - RS';
         if (JSON.stringify(conteudo) !== antes) {
-            if (modo !== 'welcome') { iniciarCarrossel(); }
+            if (modo !== 'welcome') iniciarCarrossel();
         }
     })
     .catch(function(){});
@@ -258,25 +270,21 @@ function carregarClima() {
     .then(function(r){ return r.json(); })
     .then(function(d){
         if (!d.current_weather) return;
-        var t = Math.round(d.current_weather.temperature);
-        document.getElementById('clima-temp').textContent = t + '°C';
+        document.getElementById('clima-temp').textContent = Math.round(d.current_weather.temperature) + '°C';
         document.getElementById('clima-emoji').textContent = emojiClima(d.current_weather.weathercode);
     })
     .catch(function(){});
 }
 
-// ========== CARROSSEL ==========
-var slides = [];
+// ========== CARROSSEL (com tempo por slide) ==========
 var slideIndex = 0;
 var carouselTimer = null;
 var modo = 'idle';
 
-function montarSlides(){
-    var s = [];
-    (conteudo.promocoes || []).forEach(function(p){ s.push({tipo:'promo', p:p}); });
-    s.push({tipo:'clima'});
-    (conteudo.videos || []).forEach(function(v){ s.push({tipo:'video', id:v}); });
-    return s;
+function tempoSlide(s) {
+    var t = parseInt(s.tempo);
+    if (!t || t < 2) t = (s.tipo === 'video') ? 30 : 8;
+    return t * 1000;
 }
 
 function agendar(ms){
@@ -286,7 +294,7 @@ function agendar(ms){
 
 function proximoSlide(){
     if (modo === 'welcome') return;
-    slides = montarSlides();
+    var slides = conteudo.slides || [];
     if (modo === 'idle') {
         if (slides.length === 0) { mostrarIdle(); agendar(8000); return; }
         slideIndex = 0;
@@ -294,13 +302,13 @@ function proximoSlide(){
         slideIndex++;
         if (slideIndex >= slides.length) { mostrarIdle(); agendar(8000); return; }
     }
-    mostrarSlide(slideIndex);
-    var ms = (slides[slideIndex].tipo === 'video') ? 30000 : 8000;
-    agendar(ms);
+    mostrarSlide(slides[slideIndex]);
+    agendar(tempoSlide(slides[slideIndex]));
 }
 
 function esconderTudo(){
     document.getElementById('promo').classList.remove('show');
+    document.getElementById('imagem').classList.remove('show');
     document.getElementById('clima').classList.remove('show');
     document.getElementById('video-slide').classList.remove('show');
     document.getElementById('promo-glow').style.opacity = '0';
@@ -313,24 +321,45 @@ function mostrarIdle(){
     document.getElementById('idle').classList.remove('hidden');
 }
 
-function mostrarSlide(i){
-    var s = slides[i];
+function mostrarSlide(s){
     modo = 'slide';
     document.getElementById('idle').classList.add('hidden');
-    if (s.tipo === 'promo') mostrarPromo(s.p);
+    if (s.tipo === 'promo') mostrarPromo(s);
+    else if (s.tipo === 'imagem') mostrarImagem(s);
     else if (s.tipo === 'clima') mostrarClima();
-    else if (s.tipo === 'video') mostrarVideo(s.id);
+    else if (s.tipo === 'video') mostrarVideo(s);
+    else mostrarIdle();
 }
 
 function mostrarPromo(p){
     esconderTudo();
     var cor = p.cor || '#d9b759';
+    var f = parseInt(p.fonte) || 100;
+
     document.getElementById('promo-titulo').textContent = p.titulo;
     document.getElementById('promo-desc').textContent = p.descricao;
-    document.getElementById('promo').style.setProperty('--cor', cor);
+    document.getElementById('promo-titulo').style.fontSize = Math.round(tela.fsPromoTitulo * f/100) + 'px';
+    document.getElementById('promo-desc').style.fontSize = Math.round(tela.fsPromoDesc * f/100) + 'px';
+
+    var promo = document.getElementById('promo');
+    if (p.imagem) {
+        promo.style.backgroundImage = 'linear-gradient(rgba(6,6,18,0.72), rgba(6,6,18,0.72)), url("' + p.imagem + '")';
+        promo.style.backgroundSize = 'cover';
+        promo.style.backgroundPosition = 'center';
+    } else {
+        promo.style.backgroundImage = 'none';
+    }
+
+    promo.style.setProperty('--cor', cor);
     document.getElementById('promo-glow').style.setProperty('--cor', cor);
-    document.getElementById('promo-glow').style.opacity = '1';
-    document.getElementById('promo').classList.add('show');
+    document.getElementById('promo-glow').style.opacity = p.imagem ? '0' : '1';
+    promo.classList.add('show');
+}
+
+function mostrarImagem(s){
+    esconderTudo();
+    document.getElementById('imagem-img').src = s.url || '';
+    document.getElementById('imagem').classList.add('show');
 }
 
 function mostrarClima(){
@@ -338,21 +367,31 @@ function mostrarClima(){
     document.getElementById('clima').classList.add('show');
 }
 
-function mostrarVideo(id){
+function extrairIdYouTube(u){
+    if (!u) return '';
+    u = String(u).trim();
+    if (/^[A-Za-z0-9_-]{11}$/.test(u)) return u;
+    var m = u.match(/[?&]v=([A-Za-z0-9_-]{11})/); if (m) return m[1];
+    m = u.match(/youtu\.be\/([A-Za-z0-9_-]{11})/); if (m) return m[1];
+    m = u.match(/shorts\/([A-Za-z0-9_-]{11})/); if (m) return m[1];
+    m = u.match(/embed\/([A-Za-z0-9_-]{11})/); if (m) return m[1];
+    return '';
+}
+
+function mostrarVideo(s){
     esconderTudo();
-    var f = document.getElementById('video-frame');
-    f.src = 'https://www.youtube.com/embed/' + id + '?autoplay=1&mute=1&loop=1&playlist=' + id + '&controls=0&rel=0';
+    var id = extrairIdYouTube(s.url);
+    if (!id) { mostrarIdle(); return; }
+    document.getElementById('video-frame').src = 'https://www.youtube.com/embed/' + id + '?autoplay=1&mute=1&loop=1&playlist=' + id + '&controls=0&rel=0';
     document.getElementById('video-slide').classList.add('show');
 }
 
-function pararVideo(){
-    document.getElementById('video-frame').src = '';
-}
+function pararVideo(){ document.getElementById('video-frame').src = ''; }
 
 function iniciarCarrossel(){
     if (carouselTimer) clearTimeout(carouselTimer);
     mostrarIdle();
-    agendar(8000);
+    agendar(6000);
 }
 
 // ========== BOAS-VINDAS ==========

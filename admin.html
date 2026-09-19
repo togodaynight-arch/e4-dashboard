@@ -3,66 +3,80 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Editar Tela de Boas-vindas</title>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+<title>Painel de Mídia - Loja</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Montserrat',sans-serif;background:#0a0a12;color:#fff;min-height:100vh;padding:20px}
-.wrap{max-width:480px;margin:0 auto}
-h1{font-size:22px;color:#d9b759;margin-bottom:4px;letter-spacing:1px}
-p.sub{color:#666;font-size:12px;margin-bottom:20px}
-.card{background:#15151f;border:1px solid #26262f;border-radius:12px;padding:16px;margin-bottom:14px}
+body{font-family:'Montserrat',sans-serif;background:#0a0a12;color:#fff;min-height:100vh;padding:16px}
+.wrap{max-width:520px;margin:0 auto}
+h1{font-size:21px;color:#d9b759;margin-bottom:4px;letter-spacing:1px}
+p.sub{color:#666;font-size:12px;margin-bottom:18px}
+.card{background:#15151f;border:1px solid #26262f;border-radius:14px;padding:16px;margin-bottom:14px}
 .card h2{font-size:13px;color:#d9b759;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
 label{display:block;color:#999;font-size:10px;text-transform:uppercase;margin-bottom:4px}
-input,textarea{width:100%;padding:10px;margin-bottom:12px;background:#1a1a28;border:1px solid #333;color:#fff;border-radius:6px;font-size:14px;font-family:inherit}
-textarea{resize:vertical;min-height:56px}
-.item{background:#11111a;border:1px solid #222;padding:12px;border-radius:8px;margin-bottom:10px}
-.item .row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-.item input[type="color"]{width:42px;height:36px;padding:0;border:none;cursor:pointer;background:none;flex-shrink:0;margin-bottom:0}
-.item input[type="text"]{margin-bottom:0}
-.btn{display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px}
-.btn-add{background:#d9b759;color:#000}
+input,textarea,select{width:100%;padding:10px;margin-bottom:12px;background:#1a1a28;border:1px solid #333;color:#fff;border-radius:7px;font-size:14px;font-family:inherit}
+textarea{resize:vertical;min-height:52px}
+input[type="color"]{width:48px;height:34px;padding:2px;cursor:pointer;flex-shrink:0}
+input[type="range"]{padding:0;accent-color:#d9b759;cursor:pointer}
+.btn{display:block;width:100%;padding:13px;border:none;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px}
 .btn-save{background:#3b82f6;color:#fff}
-.btn-del{background:#333;color:#999;font-size:11px;padding:5px;width:auto}
 .msg{padding:12px;border-radius:8px;font-size:13px;margin-bottom:12px;display:none}
 .msg.ok{display:block;background:#0f2b1c;color:#34d399;border:1px solid #14532d}
 .msg.erro{display:block;background:#2b0f0f;color:#f87171;border:1px solid #7f1d1d}
-.senha-box input{margin-bottom:0}
-.hint{font-size:10px;color:#666;margin-top:-6px;margin-bottom:10px}
+
+/* ====== SLIDES ====== */
+.add-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.add-row button{flex:1 1 48%;padding:10px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;background:#1a1a2e;border:1px solid #333;color:#d9b759}
+.add-row button:active{opacity:0.8}
+
+.slide-card{background:#11111a;border:1px solid #2a2a3a;border-radius:12px;padding:12px;margin-bottom:12px}
+.slide-head{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.slide-head select{flex:1;margin-bottom:0;font-weight:700}
+.slide-head .mini{width:34px;height:34px;flex-shrink:0;border:none;border-radius:7px;background:#1a1a2e;border:1px solid #333;color:#fff;font-size:14px;cursor:pointer;font-family:inherit}
+.slide-head .mini.danger{color:#f87171}
+.slide-body label{margin-top:4px}
+.row2{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.row2 label{margin:0;flex:1}
+.row2 input[type="color"]{margin:0}
+.fonte-val{color:#d9b759;font-weight:700}
+.preview{margin:6px 0 10px;border-radius:8px;overflow:hidden;background:#0a0a12;border:1px solid #222}
+.preview img{width:100%;display:block;max-height:140px;object-fit:contain;background:#000}
+.preview .ph{color:#555;font-size:11px;padding:14px;text-align:center}
+.empty{color:#555;font-size:12px;padding:10px;text-align:center}
+.hint{font-size:10px;color:#666;margin-top:-4px;margin-bottom:8px}
 </style>
 </head>
 <body>
 <div class="wrap">
-    <h1>Editar Tela de Boas-vindas</h1>
-    <p class="sub">As mudanças aparecem na TV em ~10 segundos.</p>
+    <h1>Painel de Mídia</h1>
+    <p class="sub">Monte a vitrine digital da loja. Salve e a TV atualiza em ~10s.</p>
 
     <div class="msg" id="msg"></div>
 
-    <div class="card senha-box">
-        <h2>Senha</h2>
+    <div class="card">
+        <h2>🔒 Senha</h2>
         <input type="password" id="senha" placeholder="Digite a senha">
     </div>
 
     <div class="card">
-        <h2>Loja</h2>
+        <h2>🏪 Loja</h2>
         <label>Nome da Loja</label>
         <input type="text" id="loja" placeholder="TRANS BUS">
         <label>Mensagem de Boas-vindas</label>
         <input type="text" id="mensagem" placeholder="BEM-VINDO">
-        <label>Cidade (pra temperatura)</label>
+        <label>Cidade (temperatura)</label>
         <input type="text" id="cidade" placeholder="Cachoeirinha - RS">
     </div>
 
     <div class="card">
-        <h2>Promoções</h2>
-        <div id="promos"></div>
-        <button class="btn btn-add" onclick="addPromo()">+ Adicionar Promoção</button>
-    </div>
-
-    <div class="card">
-        <h2>Vídeos (YouTube)</h2>
-        <div id="videos"></div>
-        <button class="btn btn-add" onclick="addVideo()">+ Adicionar Vídeo</button>
+        <h2>🖼️ Telas (rodízio)</h2>
+        <div id="slides"></div>
+        <div class="add-row">
+            <button onclick="addSlide('promo')">+ Texto</button>
+            <button onclick="addSlide('imagem')">+ Imagem</button>
+            <button onclick="addSlide('video')">+ Vídeo</button>
+            <button onclick="addSlide('clima')">+ Clima</button>
+        </div>
     </div>
 
     <button class="btn btn-save" onclick="salvar()">💾 Salvar Tudo</button>
@@ -71,95 +85,149 @@ textarea{resize:vertical;min-height:56px}
 <script>
 var FIREBASE_URL = 'https://loja-bemvindo-default-rtdb.firebaseio.com/config.json';
 var SENHA = 'togo2026';
+var slides = [];
+
+var TIPO_LABEL = { promo:'📝 Texto', imagem:'🖼️ Imagem', video:'🎬 Vídeo', clima:'🌡️ Clima' };
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function msg(t, ok){var m=document.getElementById('msg');m.textContent=t;m.className='msg '+(ok?'ok':'erro');}
 
-// ---- promoções ----
-function addPromo(titulo, descricao, cor){
-    var d=document.createElement('div');
-    d.className='item';
-    d.innerHTML =
-        '<div class="row">' +
-            '<input type="color" class="p-cor" value="'+(cor||'#d9b759')+'">' +
-            '<input type="text" class="p-titulo" placeholder="Título (ex: OFERTA DO DIA)" value="'+esc(titulo)+'">' +
-            '<button class="btn btn-del" onclick="this.parentElement.parentElement.remove()">✕</button>' +
-        '</div>' +
-        '<textarea class="p-desc" placeholder="Descrição (ex: Confira as novidades)">'+esc(descricao)+'</textarea>';
-    document.getElementById('promos').appendChild(d);
-}
-
-// ---- vídeos ----
-function addVideo(url){
-    var d=document.createElement('div');
-    d.className='item';
-    d.innerHTML =
-        '<div class="row">' +
-            '<input type="text" class="v-url" placeholder="Cole o link do YouTube aqui" value="'+esc(url)+'">' +
-            '<button class="btn btn-del" onclick="this.parentElement.parentElement.remove()">✕</button>' +
-        '</div>' +
-        '<div class="hint">Serve: youtube.com/watch?v=... · youtu.be/... · shorts</div>';
-    document.getElementById('videos').appendChild(d);
-}
-
 function extrairId(u){
     if(!u) return '';
-    u = String(u).trim();
-    if(u.length === 11 && /^[A-Za-z0-9_-]{11}$/.test(u)) return u;
-    var m = u.match(/[?&]v=([A-Za-z0-9_-]{11})/);
-    if(m) return m[1];
-    m = u.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
-    if(m) return m[1];
-    m = u.match(/shorts\/([A-Za-z0-9_-]{11})/);
-    if(m) return m[1];
-    m = u.match(/embed\/([A-Za-z0-9_-]{11})/);
-    if(m) return m[1];
+    u=String(u).trim();
+    if(/^[A-Za-z0-9_-]{11}$/.test(u)) return u;
+    var m=u.match(/[?&]v=([A-Za-z0-9_-]{11})/); if(m) return m[1];
+    m=u.match(/youtu\.be\/([A-Za-z0-9_-]{11})/); if(m) return m[1];
+    m=u.match(/shorts\/([A-Za-z0-9_-]{11})/); if(m) return m[1];
+    m=u.match(/embed\/([A-Za-z0-9_-]{11})/); if(m) return m[1];
     return '';
 }
+
+function novoSlide(tipo){
+    if(tipo==='promo') return {tipo:'promo', titulo:'', descricao:'', cor:'#d9b759', fonte:100, imagem:'', tempo:8};
+    if(tipo==='imagem') return {tipo:'imagem', url:'', tempo:8};
+    if(tipo==='video') return {tipo:'video', url:'', tempo:30};
+    if(tipo==='clima') return {tipo:'clima', tempo:8};
+    return {tipo:'promo', titulo:'', descricao:'', cor:'#d9b759', fonte:100, imagem:'', tempo:8};
+}
+
+function addSlide(tipo){ slides.push(novoSlide(tipo)); render(); }
+
+function remover(i){ slides.splice(i,1); render(); }
+function mover(i,dir){ var j=i+dir; if(j<0||j>=slides.length) return; var t=slides[i]; slides[i]=slides[j]; slides[j]=t; render(); }
+function mudarTipo(i,tipo){ var v=novoSlide(tipo); v.tempo=slides[i].tempo; slides[i]=v; render(); }
+
+function cardHTML(s,i){
+    var opts = Object.keys(TIPO_LABEL).map(function(t){return '<option value="'+t+'"'+(s.tipo===t?' selected':'')+'>'+TIPO_LABEL[t]+'</option>'}).join('');
+    var body = '';
+    if(s.tipo==='promo') body = promoBody(s,i);
+    else if(s.tipo==='imagem') body = imagemBody(s,i);
+    else if(s.tipo==='video') body = videoBody(s,i);
+    else if(s.tipo==='clima') body = climaBody();
+
+    body += '<label style="margin-top:8px">⏱️ Tempo na tela (segundos)</label>' +
+        '<input type="number" data-field="tempo" min="2" max="600" value="'+(s.tempo||8)+'">';
+
+    return '<div class="slide-card" data-idx="'+i+'">' +
+        '<div class="slide-head">' +
+            '<select class="s-tipo" onchange="mudarTipo('+i+',this.value)">'+opts+'</select>' +
+            '<button class="mini" onclick="mover('+i+',-1)">↑</button>' +
+            '<button class="mini" onclick="mover('+i+',1)">↓</button>' +
+            '<button class="mini danger" onclick="remover('+i+')">✕</button>' +
+        '</div>' + body + '</div>';
+}
+
+function promoBody(s,i){
+    return '<label>Título</label>' +
+        '<input type="text" data-field="titulo" value="'+esc(s.titulo)+'" placeholder="OFERTA DO DIA">' +
+        '<label>Descrição</label>' +
+        '<textarea data-field="descricao" placeholder="Confira as novidades">'+esc(s.descricao)+'</textarea>' +
+        '<div class="row2"><label>Cor</label><input type="color" data-field="cor" value="'+(s.cor||'#d9b759')+'"></div>' +
+        '<label>Tamanho da letra: <span class="fonte-val">'+(s.fonte||100)+'%</span></label>' +
+        '<input type="range" data-field="fonte" min="50" max="250" value="'+(s.fonte||100)+'">' +
+        '<label>Imagem de fundo (opcional — cole o link)</label>' +
+        '<input type="text" data-field="imagem" value="'+esc(s.imagem)+'" placeholder="https://...">' +
+        previewImg(s.imagem);
+}
+
+function imagemBody(s,i){
+    return '<label>Link da imagem</label>' +
+        '<input type="text" data-field="url" value="'+esc(s.url)+'" placeholder="https://...">' +
+        previewImg(s.url);
+}
+
+function videoBody(s,i){
+    return '<label>Link do vídeo (YouTube)</label>' +
+        '<input type="text" data-field="url" value="'+esc(s.url)+'" placeholder="Cole o link do YouTube">' +
+        '<div class="hint">Serve: youtube.com/watch?v=... · youtu.be/... · shorts</div>';
+}
+
+function climaBody(){
+    return '<div class="hint" style="margin:0">Mostra a temperatura da cidade definida acima.</div>';
+}
+
+function previewImg(url){
+    var inner = url ? '<img src="'+esc(url)+'" onerror="this.parentElement.innerHTML=\'<div class=&quot;ph&quot;>Não foi possível carregar a imagem</div>\'">' : '<div class="ph">Sem imagem</div>';
+    return '<div class="preview">'+inner+'</div>';
+}
+
+function render(){
+    var el = document.getElementById('slides');
+    if(slides.length===0){ el.innerHTML='<div class="empty">Nenhuma tela ainda. Toque em "+ Texto", "+ Imagem" ou "+ Vídeo" para começar.</div>'; return; }
+    el.innerHTML = slides.map(function(s,i){ return cardHTML(s,i); }).join('');
+}
+
+// delegação: atualiza slides[i] em tempo real
+document.getElementById('slides').addEventListener('input', function(e){
+    var card = e.target.closest('.slide-card');
+    if(!card) return;
+    var i = parseInt(card.dataset.idx);
+    var f = e.target.dataset.field;
+    if(!f) return;
+    if(f==='titulo') slides[i].titulo = e.target.value;
+    else if(f==='descricao') slides[i].descricao = e.target.value;
+    else if(f==='cor') slides[i].cor = e.target.value;
+    else if(f==='fonte'){ slides[i].fonte = parseInt(e.target.value)||100; var lv=card.querySelector('.fonte-val'); if(lv) lv.textContent=(slides[i].fonte)+'%'; }
+    else if(f==='imagem'){ slides[i].imagem = e.target.value; var pv=card.querySelector('.preview'); if(pv) pv.innerHTML = e.target.value ? '<img src="'+esc(e.target.value)+'" onerror="this.parentElement.innerHTML=\'<div class=&quot;ph&quot;>Não foi possível carregar a imagem</div>\'">' : '<div class="ph">Sem imagem</div>'; }
+    else if(f==='url') slides[i].url = e.target.value;
+    else if(f==='tempo') slides[i].tempo = parseInt(e.target.value)||0;
+});
 
 function carregar(){
     fetch(FIREBASE_URL)
     .then(function(r){return r.json()})
     .then(function(c){
-        if(!c){c={};}
+        if(!c)c={};
         document.getElementById('loja').value=c.loja||'';
         document.getElementById('mensagem').value=c.mensagem||'';
         document.getElementById('cidade').value=c.cidade||'';
-        document.getElementById('promos').innerHTML='';
-        (c.promocoes||[]).forEach(function(p){addPromo(p.titulo,p.descricao,p.cor)});
-        if(!c.promocoes||c.promocoes.length===0)addPromo();
-        document.getElementById('videos').innerHTML='';
-        (c.videos||[]).forEach(function(id){addVideo('https://www.youtube.com/watch?v='+id)});
+        slides = c.slides||[];
+        render();
     })
-    .catch(function(){msg('Erro ao carregar a configuração.',false)});
+    .catch(function(){msg('Erro ao carregar.',false)});
 }
 
 function salvar(){
     if(document.getElementById('senha').value!==SENHA){msg('Senha incorreta.',false);return;}
 
-    var promos=[];
-    document.querySelectorAll('#promos .item').forEach(function(el){
-        var t=el.querySelector('.p-titulo').value.trim();
-        if(t)promos.push({titulo:t,descricao:el.querySelector('.p-desc').value.trim(),cor:el.querySelector('.p-cor').value});
+    var limpo = slides.map(function(s){
+        var o = { tipo:s.tipo, tempo: parseInt(s.tempo)||8 };
+        if(s.tipo==='promo'){ o.titulo=(s.titulo||'').trim(); o.descricao=(s.descricao||'').trim(); o.cor=s.cor||'#d9b759'; o.fonte=parseInt(s.fonte)||100; o.imagem=(s.imagem||'').trim(); }
+        if(s.tipo==='imagem'){ o.url=(s.url||'').trim(); }
+        if(s.tipo==='video'){ o.url=(s.url||'').trim(); }
+        return o;
     });
 
-    var videos=[];
-    document.querySelectorAll('#videos .item').forEach(function(el){
-        var id=extrairId(el.querySelector('.v-url').value);
-        if(id)videos.push(id);
-    });
-
-    var body={
-        loja:document.getElementById('loja').value.trim(),
-        mensagem:document.getElementById('mensagem').value.trim(),
-        cidade:document.getElementById('cidade').value.trim(),
-        promocoes:promos,
-        videos:videos
+    var body = {
+        loja: document.getElementById('loja').value.trim(),
+        mensagem: document.getElementById('mensagem').value.trim(),
+        cidade: document.getElementById('cidade').value.trim(),
+        slides: limpo
     };
 
     fetch(FIREBASE_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(function(r){return r.json()})
-    .then(function(){msg('Salvo! A TV vai atualizar em segundos.',true)})
+    .then(function(){msg('Salvo! A TV vai atualizar em alguns segundos.',true)})
     .catch(function(){msg('Erro de conexão.',false)});
 }
 
