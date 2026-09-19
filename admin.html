@@ -16,10 +16,10 @@ p.sub{color:#666;font-size:12px;margin-bottom:20px}
 label{display:block;color:#999;font-size:10px;text-transform:uppercase;margin-bottom:4px}
 input,textarea{width:100%;padding:10px;margin-bottom:12px;background:#1a1a28;border:1px solid #333;color:#fff;border-radius:6px;font-size:14px;font-family:inherit}
 textarea{resize:vertical;min-height:56px}
-.promo-item{background:#11111a;border:1px solid #222;padding:12px;border-radius:8px;margin-bottom:10px}
-.promo-item .row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-.promo-item input[type="color"]{width:42px;height:36px;padding:0;border:none;cursor:pointer;background:none;flex-shrink:0;margin-bottom:0}
-.promo-item input[type="text"]{margin-bottom:0}
+.item{background:#11111a;border:1px solid #222;padding:12px;border-radius:8px;margin-bottom:10px}
+.item .row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.item input[type="color"]{width:42px;height:36px;padding:0;border:none;cursor:pointer;background:none;flex-shrink:0;margin-bottom:0}
+.item input[type="text"]{margin-bottom:0}
 .btn{display:block;width:100%;padding:12px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:8px}
 .btn-add{background:#d9b759;color:#000}
 .btn-save{background:#3b82f6;color:#fff}
@@ -28,12 +28,13 @@ textarea{resize:vertical;min-height:56px}
 .msg.ok{display:block;background:#0f2b1c;color:#34d399;border:1px solid #14532d}
 .msg.erro{display:block;background:#2b0f0f;color:#f87171;border:1px solid #7f1d1d}
 .senha-box input{margin-bottom:0}
+.hint{font-size:10px;color:#666;margin-top:-6px;margin-bottom:10px}
 </style>
 </head>
 <body>
 <div class="wrap">
     <h1>Editar Tela de Boas-vindas</h1>
-    <p class="sub">As mudanças aparecem na TV em alguns segundos.</p>
+    <p class="sub">As mudanças aparecem na TV em ~10 segundos.</p>
 
     <div class="msg" id="msg"></div>
 
@@ -48,6 +49,8 @@ textarea{resize:vertical;min-height:56px}
         <input type="text" id="loja" placeholder="TRANS BUS">
         <label>Mensagem de Boas-vindas</label>
         <input type="text" id="mensagem" placeholder="BEM-VINDO">
+        <label>Cidade (pra temperatura)</label>
+        <input type="text" id="cidade" placeholder="Cachoeirinha - RS">
     </div>
 
     <div class="card">
@@ -56,7 +59,13 @@ textarea{resize:vertical;min-height:56px}
         <button class="btn btn-add" onclick="addPromo()">+ Adicionar Promoção</button>
     </div>
 
-    <button class="btn btn-save" onclick="salvar()">💾 Salvar</button>
+    <div class="card">
+        <h2>Vídeos (YouTube)</h2>
+        <div id="videos"></div>
+        <button class="btn btn-add" onclick="addVideo()">+ Adicionar Vídeo</button>
+    </div>
+
+    <button class="btn btn-save" onclick="salvar()">💾 Salvar Tudo</button>
 </div>
 
 <script>
@@ -66,17 +75,46 @@ var SENHA = 'togo2026';
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function msg(t, ok){var m=document.getElementById('msg');m.textContent=t;m.className='msg '+(ok?'ok':'erro');}
 
+// ---- promoções ----
 function addPromo(titulo, descricao, cor){
     var d=document.createElement('div');
-    d.className='promo-item';
+    d.className='item';
     d.innerHTML =
         '<div class="row">' +
             '<input type="color" class="p-cor" value="'+(cor||'#d9b759')+'">' +
-            '<input type="text" class="p-titulo" placeholder="Título" value="'+esc(titulo)+'">' +
+            '<input type="text" class="p-titulo" placeholder="Título (ex: OFERTA DO DIA)" value="'+esc(titulo)+'">' +
             '<button class="btn btn-del" onclick="this.parentElement.parentElement.remove()">✕</button>' +
         '</div>' +
-        '<textarea class="p-desc" placeholder="Descrição">'+esc(descricao)+'</textarea>';
+        '<textarea class="p-desc" placeholder="Descrição (ex: Confira as novidades)">'+esc(descricao)+'</textarea>';
     document.getElementById('promos').appendChild(d);
+}
+
+// ---- vídeos ----
+function addVideo(url){
+    var d=document.createElement('div');
+    d.className='item';
+    d.innerHTML =
+        '<div class="row">' +
+            '<input type="text" class="v-url" placeholder="Cole o link do YouTube aqui" value="'+esc(url)+'">' +
+            '<button class="btn btn-del" onclick="this.parentElement.parentElement.remove()">✕</button>' +
+        '</div>' +
+        '<div class="hint">Serve: youtube.com/watch?v=... · youtu.be/... · shorts</div>';
+    document.getElementById('videos').appendChild(d);
+}
+
+function extrairId(u){
+    if(!u) return '';
+    u = String(u).trim();
+    if(u.length === 11 && /^[A-Za-z0-9_-]{11}$/.test(u)) return u;
+    var m = u.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+    if(m) return m[1];
+    m = u.match(/youtu\.be\/([A-Za-z0-9_-]{11})/);
+    if(m) return m[1];
+    m = u.match(/shorts\/([A-Za-z0-9_-]{11})/);
+    if(m) return m[1];
+    m = u.match(/embed\/([A-Za-z0-9_-]{11})/);
+    if(m) return m[1];
+    return '';
 }
 
 function carregar(){
@@ -86,21 +124,39 @@ function carregar(){
         if(!c){c={};}
         document.getElementById('loja').value=c.loja||'';
         document.getElementById('mensagem').value=c.mensagem||'';
+        document.getElementById('cidade').value=c.cidade||'';
         document.getElementById('promos').innerHTML='';
         (c.promocoes||[]).forEach(function(p){addPromo(p.titulo,p.descricao,p.cor)});
         if(!c.promocoes||c.promocoes.length===0)addPromo();
+        document.getElementById('videos').innerHTML='';
+        (c.videos||[]).forEach(function(id){addVideo('https://www.youtube.com/watch?v='+id)});
     })
     .catch(function(){msg('Erro ao carregar a configuração.',false)});
 }
 
 function salvar(){
     if(document.getElementById('senha').value!==SENHA){msg('Senha incorreta.',false);return;}
+
     var promos=[];
-    document.querySelectorAll('.promo-item').forEach(function(el){
+    document.querySelectorAll('#promos .item').forEach(function(el){
         var t=el.querySelector('.p-titulo').value.trim();
         if(t)promos.push({titulo:t,descricao:el.querySelector('.p-desc').value.trim(),cor:el.querySelector('.p-cor').value});
     });
-    var body={loja:document.getElementById('loja').value.trim(),mensagem:document.getElementById('mensagem').value.trim(),promocoes:promos};
+
+    var videos=[];
+    document.querySelectorAll('#videos .item').forEach(function(el){
+        var id=extrairId(el.querySelector('.v-url').value);
+        if(id)videos.push(id);
+    });
+
+    var body={
+        loja:document.getElementById('loja').value.trim(),
+        mensagem:document.getElementById('mensagem').value.trim(),
+        cidade:document.getElementById('cidade').value.trim(),
+        promocoes:promos,
+        videos:videos
+    };
+
     fetch(FIREBASE_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
     .then(function(r){return r.json()})
     .then(function(){msg('Salvo! A TV vai atualizar em segundos.',true)})

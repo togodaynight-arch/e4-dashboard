@@ -28,6 +28,17 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 .promo-desc{font-size:var(--fs-promo-desc,32px);color:#c9d0ee;letter-spacing:2px;font-weight:300;max-width:80%}
 .promo-glow{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .6s;background:radial-gradient(circle at 50% 35%, var(--cor,rgba(217,183,89,0.25)) 0%, transparent 55%)}
 
+.clima{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0;transition:opacity .6s}
+.clima.show{display:flex;opacity:1}
+.clima-emoji{font-size:70px;margin-bottom:10px}
+.clima-temp{font-size:130px;font-weight:900;color:#fff;line-height:1;text-shadow:0 0 70px rgba(90,160,255,0.45)}
+.clima-cidade{font-size:30px;color:#7a86b8;letter-spacing:4px;margin-top:18px;text-transform:uppercase}
+.clima-tag{font-size:16px;letter-spacing:6px;color:#5aa0ff;text-transform:uppercase;margin-bottom:14px;font-weight:600}
+
+.video-slide{position:fixed;inset:0;display:none;opacity:0;transition:opacity .6s;background:#000}
+.video-slide.show{display:block;opacity:1}
+.video-slide iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+
 .welcome{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0;transform:scale(0.85);transition:all 0.7s cubic-bezier(0.175,0.885,0.32,1.275)}
 .welcome.show{display:flex;opacity:1;transform:scale(1)}
 .logo{font-size:var(--fs-logo,24px);font-weight:300;letter-spacing:8px;color:#d9b759;margin-bottom:40px;text-transform:uppercase}
@@ -78,6 +89,17 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
             <div class="promo-desc" id="promo-desc"></div>
         </div>
 
+        <div class="clima" id="clima">
+            <div class="clima-tag">Clima agora</div>
+            <div class="clima-emoji" id="clima-emoji">🌡️</div>
+            <div class="clima-temp" id="clima-temp">--°C</div>
+            <div class="clima-cidade" id="clima-cidade">Cachoeirinha - RS</div>
+        </div>
+
+        <div class="video-slide" id="video-slide">
+            <iframe id="video-frame" src="" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+        </div>
+
         <div class="welcome" id="welcome">
             <div class="logo" id="store-name-display">Loja</div>
             <div class="greeting" id="greeting-display">BEM-VINDO</div>
@@ -92,7 +114,7 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 <div class="panel" id="panel">
     <h4>⚙️ Ajustes da Tela</h4>
 
-    <div class="note">Promoções e nome da loja são editados pelo <b>painel admin</b> (celular). Aqui você ajusta só o tamanho e a posição da tela.</div>
+    <div class="note">Promoções, clima e vídeos são editados pelo <b>painel admin</b> (celular). Aqui você ajusta só tamanho e posição da tela.</div>
 
     <details open>
     <summary>🖥️ Tela</summary>
@@ -145,14 +167,13 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 <div class="hint">Pressione <b>C</b> para abrir os ajustes</div>
 
 <script>
-// ========== API ==========
-var API_BASE = 'https://e4-dashboard-2lvk.onrender.com'; // dados de entrada de clientes
-var FIREBASE_URL = 'https://loja-bemvindo-default-rtdb.firebaseio.com/config.json'; // conteúdo (loja/promoções)
+// ========== CONFIG ==========
+var API_BASE = 'https://e4-dashboard-2lvk.onrender.com'; // entrada de clientes
+var FIREBASE_URL = 'https://loja-bemvindo-default-rtdb.firebaseio.com/config.json';
+var LAT = -29.95111, LON = -51.09389; // Cachoeirinha - RS
 
-// Conteúdo (loja, mensagem, promoções) vem do servidor
-var conteudo = { loja: 'TRANS BUS', mensagem: 'BEM-VINDO', promocoes: [] };
+var conteudo = { loja:'TRANS BUS', mensagem:'BEM-VINDO', cidade:'Cachoeirinha - RS', promocoes:[], videos:[] };
 
-// Ajustes de tela (só deste aparelho, salvos no navegador)
 var tela = {
     rotacao: parseInt(localStorage.getItem('cfg-rotacao') || '0'),
     zoom: parseInt(localStorage.getItem('cfg-zoom') || '100'),
@@ -164,11 +185,8 @@ var tela = {
     fsPromoDesc: parseInt(localStorage.getItem('cfg-fs-promo-desc') || '32')
 };
 
-// ========== TELA (rotacao / zoom / letras) ==========
-var FS_KEYS = {
-    fsNome: '--fs-nome', fsSaudacao: '--fs-saudacao', fsLogo: '--fs-logo',
-    fsIdleLogo: '--fs-idle-logo', fsPromoTitulo: '--fs-promo-titulo', fsPromoDesc: '--fs-promo-desc'
-};
+// ========== TELA ==========
+var FS_KEYS = { fsNome:'--fs-nome', fsSaudacao:'--fs-saudacao', fsLogo:'--fs-logo', fsIdleLogo:'--fs-idle-logo', fsPromoTitulo:'--fs-promo-titulo', fsPromoDesc:'--fs-promo-desc' };
 
 function aplicarTela() {
     var stage = document.getElementById('stage');
@@ -176,131 +194,181 @@ function aplicarTela() {
     if (tela.rotacao === 90) stage.classList.add('rot90');
     else if (tela.rotacao === 180) stage.classList.add('rot180');
     else if (tela.rotacao === 270) stage.classList.add('rot270');
-
     document.getElementById('scaler').style.transform = 'scale(' + (tela.zoom/100) + ')';
-
-    Object.keys(FS_KEYS).forEach(function(k) {
-        stage.style.setProperty(FS_KEYS[k], tela[k] + 'px');
-    });
-
-    document.querySelectorAll('#rot-btns button').forEach(function(b) {
-        b.classList.toggle('active', parseInt(b.dataset.r) === tela.rotacao);
-    });
+    Object.keys(FS_KEYS).forEach(function(k){ stage.style.setProperty(FS_KEYS[k], tela[k] + 'px'); });
+    document.querySelectorAll('#rot-btns button').forEach(function(b){ b.classList.toggle('active', parseInt(b.dataset.r) === tela.rotacao); });
 }
 
-function setRotacao(g) { tela.rotacao = g; localStorage.setItem('cfg-rotacao', g); aplicarTela(); }
-function setZoom(v) {
-    tela.zoom = parseInt(v);
-    document.getElementById('zoom-val').textContent = v + '%';
-    localStorage.setItem('cfg-zoom', tela.zoom);
-    aplicarTela();
-}
-function setFont(key, valId, v, unit) {
-    tela[key] = parseInt(v);
-    document.getElementById(valId).textContent = v + unit;
-    localStorage.setItem('cfg-' + key, tela[key]);
-    aplicarTela();
-}
+function setRotacao(g){ tela.rotacao = g; localStorage.setItem('cfg-rotacao', g); aplicarTela(); }
+function setZoom(v){ tela.zoom = parseInt(v); document.getElementById('zoom-val').textContent = v + '%'; localStorage.setItem('cfg-zoom', tela.zoom); aplicarTela(); }
+function setFont(key, valId, v, unit){ tela[key] = parseInt(v); document.getElementById(valId).textContent = v + unit; localStorage.setItem('cfg-' + key, tela[key]); aplicarTela(); }
 
 function carregarControlesTela() {
-    document.getElementById('cfg-zoom').value = tela.zoom;
-    document.getElementById('zoom-val').textContent = tela.zoom + '%';
-    document.getElementById('cfg-fs-nome').value = tela.fsNome;
-    document.getElementById('fs-nome-val').textContent = tela.fsNome + 'px';
-    document.getElementById('cfg-fs-saudacao').value = tela.fsSaudacao;
-    document.getElementById('fs-saudacao-val').textContent = tela.fsSaudacao + 'px';
-    document.getElementById('cfg-fs-logo').value = tela.fsLogo;
-    document.getElementById('fs-logo-val').textContent = tela.fsLogo + 'px';
-    document.getElementById('cfg-fs-idle-logo').value = tela.fsIdleLogo;
-    document.getElementById('fs-idle-logo-val').textContent = tela.fsIdleLogo + 'px';
-    document.getElementById('cfg-fs-promo-titulo').value = tela.fsPromoTitulo;
-    document.getElementById('fs-promo-titulo-val').textContent = tela.fsPromoTitulo + 'px';
-    document.getElementById('cfg-fs-promo-desc').value = tela.fsPromoDesc;
-    document.getElementById('fs-promo-desc-val').textContent = tela.fsPromoDesc + 'px';
+    document.getElementById('cfg-zoom').value = tela.zoom; document.getElementById('zoom-val').textContent = tela.zoom + '%';
+    document.getElementById('cfg-fs-nome').value = tela.fsNome; document.getElementById('fs-nome-val').textContent = tela.fsNome + 'px';
+    document.getElementById('cfg-fs-saudacao').value = tela.fsSaudacao; document.getElementById('fs-saudacao-val').textContent = tela.fsSaudacao + 'px';
+    document.getElementById('cfg-fs-logo').value = tela.fsLogo; document.getElementById('fs-logo-val').textContent = tela.fsLogo + 'px';
+    document.getElementById('cfg-fs-idle-logo').value = tela.fsIdleLogo; document.getElementById('fs-idle-logo-val').textContent = tela.fsIdleLogo + 'px';
+    document.getElementById('cfg-fs-promo-titulo').value = tela.fsPromoTitulo; document.getElementById('fs-promo-titulo-val').textContent = tela.fsPromoTitulo + 'px';
+    document.getElementById('cfg-fs-promo-desc').value = tela.fsPromoDesc; document.getElementById('fs-promo-desc-val').textContent = tela.fsPromoDesc + 'px';
     aplicarTela();
 }
 
 // ========== PAINEL ==========
-function abrirPanel() { document.getElementById('panel').classList.add('open'); }
-function fecharPanel() { document.getElementById('panel').classList.remove('open'); }
-document.addEventListener('keydown', function(e) {
+function abrirPanel(){ document.getElementById('panel').classList.add('open'); }
+function fecharPanel(){ document.getElementById('panel').classList.remove('open'); }
+document.addEventListener('keydown', function(e){
     var tag = (e.target.tagName || '').toLowerCase();
     if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
     if (e.key === 'c' || e.key === 'C') document.getElementById('panel').classList.toggle('open');
 });
 
-// ========== CONTEÚDO (do servidor) ==========
+// ========== CONTEÚDO (Firebase) ==========
 function carregarConteudo() {
     fetch(FIREBASE_URL)
-    .then(function(r) { return r.json(); })
-    .then(function(c) {
+    .then(function(r){ return r.json(); })
+    .then(function(c){
         var antes = JSON.stringify(conteudo);
         conteudo = c || conteudo;
         document.getElementById('idle-logo').textContent = conteudo.loja;
         document.getElementById('store-name-display').textContent = conteudo.loja;
+        document.getElementById('clima-cidade').textContent = conteudo.cidade || 'Cachoeirinha - RS';
         if (JSON.stringify(conteudo) !== antes) {
-            if (modo !== 'welcome') { mostrarIdle(); iniciarCarrossel(); }
+            if (modo !== 'welcome') { iniciarCarrossel(); }
         }
     })
-    .catch(function() {});
+    .catch(function(){});
 }
 
-// ========== CARROSSEL DE PROMOÇÕES ==========
-var promoIndex = 0;
+// ========== CLIMA ==========
+function emojiClima(code){
+    if (code === 0) return '☀️';
+    if (code === 1 || code === 2) return '🌤️';
+    if (code === 3) return '⛅';
+    if (code === 45 || code === 48) return '🌫️';
+    if (code >= 51 && code <= 67) return '🌧️';
+    if (code >= 71 && code <= 77) return '🌨️';
+    if (code >= 80 && code <= 82) return '🌦️';
+    if (code >= 95) return '⛈️';
+    return '🌡️';
+}
+
+function carregarClima() {
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=' + LAT + '&longitude=' + LON + '&current_weather=true')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (!d.current_weather) return;
+        var t = Math.round(d.current_weather.temperature);
+        document.getElementById('clima-temp').textContent = t + '°C';
+        document.getElementById('clima-emoji').textContent = emojiClima(d.current_weather.weathercode);
+    })
+    .catch(function(){});
+}
+
+// ========== CARROSSEL ==========
+var slides = [];
+var slideIndex = 0;
 var carouselTimer = null;
 var modo = 'idle';
 
-function proximoSlide() {
-    if (modo !== 'idle' && modo !== 'promo') return;
-    var promos = conteudo.promocoes || [];
-    if (promos.length === 0) { mostrarIdle(); return; }
-    if (modo === 'idle') { mostrarPromo(0); promoIndex = 0; }
-    else {
-        promoIndex++;
-        if (promoIndex >= promos.length) { mostrarIdle(); return; }
-        mostrarPromo(promoIndex);
-    }
+function montarSlides(){
+    var s = [];
+    (conteudo.promocoes || []).forEach(function(p){ s.push({tipo:'promo', p:p}); });
+    s.push({tipo:'clima'});
+    (conteudo.videos || []).forEach(function(v){ s.push({tipo:'video', id:v}); });
+    return s;
 }
 
-function mostrarIdle() {
-    modo = 'idle';
+function agendar(ms){
+    if (carouselTimer) clearTimeout(carouselTimer);
+    carouselTimer = setTimeout(proximoSlide, ms);
+}
+
+function proximoSlide(){
+    if (modo === 'welcome') return;
+    slides = montarSlides();
+    if (modo === 'idle') {
+        if (slides.length === 0) { mostrarIdle(); agendar(8000); return; }
+        slideIndex = 0;
+    } else {
+        slideIndex++;
+        if (slideIndex >= slides.length) { mostrarIdle(); agendar(8000); return; }
+    }
+    mostrarSlide(slideIndex);
+    var ms = (slides[slideIndex].tipo === 'video') ? 30000 : 8000;
+    agendar(ms);
+}
+
+function esconderTudo(){
     document.getElementById('promo').classList.remove('show');
+    document.getElementById('clima').classList.remove('show');
+    document.getElementById('video-slide').classList.remove('show');
     document.getElementById('promo-glow').style.opacity = '0';
+    pararVideo();
+}
+
+function mostrarIdle(){
+    modo = 'idle';
+    esconderTudo();
     document.getElementById('idle').classList.remove('hidden');
 }
 
-function mostrarPromo(i) {
-    var p = conteudo.promocoes[i];
-    if (!p) { mostrarIdle(); return; }
-    modo = 'promo';
+function mostrarSlide(i){
+    var s = slides[i];
+    modo = 'slide';
+    document.getElementById('idle').classList.add('hidden');
+    if (s.tipo === 'promo') mostrarPromo(s.p);
+    else if (s.tipo === 'clima') mostrarClima();
+    else if (s.tipo === 'video') mostrarVideo(s.id);
+}
+
+function mostrarPromo(p){
+    esconderTudo();
     var cor = p.cor || '#d9b759';
     document.getElementById('promo-titulo').textContent = p.titulo;
     document.getElementById('promo-desc').textContent = p.descricao;
     document.getElementById('promo').style.setProperty('--cor', cor);
     document.getElementById('promo-glow').style.setProperty('--cor', cor);
     document.getElementById('promo-glow').style.opacity = '1';
-    document.getElementById('idle').classList.add('hidden');
     document.getElementById('promo').classList.add('show');
 }
 
-function iniciarCarrossel() {
-    if (carouselTimer) clearInterval(carouselTimer);
-    carouselTimer = setInterval(proximoSlide, 6000);
+function mostrarClima(){
+    esconderTudo();
+    document.getElementById('clima').classList.add('show');
+}
+
+function mostrarVideo(id){
+    esconderTudo();
+    var f = document.getElementById('video-frame');
+    f.src = 'https://www.youtube.com/embed/' + id + '?autoplay=1&mute=1&loop=1&playlist=' + id + '&controls=0&rel=0';
+    document.getElementById('video-slide').classList.add('show');
+}
+
+function pararVideo(){
+    document.getElementById('video-frame').src = '';
+}
+
+function iniciarCarrossel(){
+    if (carouselTimer) clearTimeout(carouselTimer);
+    mostrarIdle();
+    agendar(8000);
 }
 
 // ========== BOAS-VINDAS ==========
 var displayTimeout = null;
 
-function formatarNome(nome) {
+function formatarNome(nome){
     if (!nome) return '';
     var partes = nome.trim().split(' ');
     if (partes.length <= 2) return nome.toUpperCase();
     return (partes[0] + ' ' + partes[partes.length - 1]).toUpperCase();
 }
 
-function mostrarBemVindo(nome) {
+function mostrarBemVindo(nome){
     modo = 'welcome';
-    if (carouselTimer) clearInterval(carouselTimer);
+    if (carouselTimer) clearTimeout(carouselTimer);
+    esconderTudo();
 
     document.getElementById('customer-name-display').textContent = formatarNome(nome);
     document.getElementById('customer-info-display').textContent = 'Loja ' + conteudo.loja;
@@ -308,9 +376,6 @@ function mostrarBemVindo(nome) {
     document.getElementById('greeting-display').textContent = conteudo.mensagem;
 
     document.getElementById('idle').classList.add('hidden');
-    document.getElementById('promo').classList.remove('show');
-    document.getElementById('promo-glow').style.opacity = '0';
-
     document.getElementById('welcome').classList.add('show');
     document.getElementById('sb-cliente').textContent = nome;
 
@@ -318,16 +383,15 @@ function mostrarBemVindo(nome) {
     displayTimeout = setTimeout(voltarIdle, 15000);
 }
 
-function voltarIdle() {
+function voltarIdle(){
     modo = 'idle';
     document.getElementById('welcome').classList.remove('show');
-    document.getElementById('idle').classList.remove('hidden');
     document.getElementById('sb-cliente').textContent = '---';
     iniciarCarrossel();
 }
 
 // ========== TESTE ==========
-function simularEntrada() {
+function simularEntrada(){
     var nome = document.getElementById('sim-nome').value.trim();
     if (!nome) {
         var nomes = ['MARIA SILVA','JOÃO SANTOS','ANA OLIVEIRA','PEDRO COSTA','CARLOS LIMA'];
@@ -341,10 +405,10 @@ function simularEntrada() {
 // ========== ENTRADAS REAIS ==========
 var ultimaEntradaId = null;
 
-function verificarEntradasReais() {
+function verificarEntradasReais(){
     fetch(API_BASE + '/public/entrada')
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
+    .then(function(r){ return r.json(); })
+    .then(function(data){
         if (!data.ok || !data.entrada) return;
         var e = data.entrada;
         document.getElementById('sb-entrada').textContent = e.cliente || '---';
@@ -353,17 +417,18 @@ function verificarEntradasReais() {
             if (modo !== 'welcome' && e.cliente) mostrarBemVindo(e.cliente);
         }
     })
-    .catch(function() {});
+    .catch(function(){});
 }
 
 // ========== INICIALIZAÇÃO ==========
 carregarControlesTela();
 carregarConteudo();
-mostrarIdle();
+carregarClima();
 iniciarCarrossel();
 
 setInterval(carregarConteudo, 10000);
 setInterval(verificarEntradasReais, 5000);
+setInterval(carregarClima, 15 * 60 * 1000);
 </script>
 </body>
 </html>
