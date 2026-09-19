@@ -21,7 +21,7 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 .idle-logo{font-size:var(--fs-idle-logo,60px);font-weight:900;color:#d9b759;letter-spacing:6px;margin-bottom:16px;text-transform:uppercase;text-shadow:0 0 40px rgba(217,183,89,0.25)}
 .idle-text{font-size:20px;letter-spacing:5px;color:#7a86b8;text-transform:uppercase}
 
-.promo{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px;opacity:0;transition:opacity 0.6s}
+.promo{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px;opacity:0;transition:opacity 0.6s;background-size:cover;background-position:center}
 .promo.show{display:flex;opacity:1}
 .promo-tag{font-size:18px;letter-spacing:8px;color:var(--cor,#d9b759);text-transform:uppercase;margin-bottom:24px;font-weight:600}
 .promo-titulo{font-size:var(--fs-promo-titulo,88px);font-weight:900;color:#fff;letter-spacing:2px;line-height:1.05;margin-bottom:20px;text-shadow:0 0 60px var(--cor,rgba(217,183,89,0.4))}
@@ -122,7 +122,7 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 <div class="panel" id="panel">
     <h4>⚙️ Ajustes da Tela</h4>
 
-    <div class="note">Conteúdo (telas, vídeos, tempo) é editado pelo <b>painel admin</b> no celular. Aqui você ajusta só tamanho e posição da tela.</div>
+    <div class="note">Conteúdo (telas, vídeos, tempo, imagens) é editado pelo <b>painel de mídia</b> no celular. Aqui você ajusta só tamanho e posição da tela.</div>
 
     <details open>
     <summary>🖥️ Tela</summary>
@@ -177,9 +177,10 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 <script>
 var API_BASE = 'https://e4-dashboard-2lvk.onrender.com';
 var FIREBASE_URL = 'https://loja-bemvindo-default-rtdb.firebaseio.com/config.json';
+var FIREBASE_IMAGENS = 'https://loja-bemvindo-default-rtdb.firebaseio.com/imagens/';
 var LAT = -29.95111, LON = -51.09389;
 
-var conteudo = { loja:'TRANS BUS', mensagem:'BEM-VINDO', cidade:'Cachoeirinha - RS', slides:[] };
+var conteudo = { loja:'TRANS BUS', mensagem:'BEM-VINDO', cidade:'Cachoeirinha - RS', slides:[], tempoBemvindo:15 };
 
 var tela = {
     rotacao: parseInt(localStorage.getItem('cfg-rotacao') || '0'),
@@ -230,8 +231,8 @@ document.addEventListener('keydown', function(e){
 
 // ========== CONTEÚDO ==========
 var SLIDES_DEFAULT = [
-    { tipo:'promo', titulo:'OFERTA DO DIA', descricao:'Confira as novidades da nossa loja', cor:'#d9b759', tempo:8 },
-    { tipo:'promo', titulo:'ACEITAMOS PIX', descricao:'Pagamento rápido e seguro', cor:'#10b981', tempo:8 },
+    { tipo:'promo', titulo:'OFERTA DO DIA', descricao:'Confira as novidades da nossa loja', cor:'#d9b759', fonte:100, imagem:'', tempo:8 },
+    { tipo:'promo', titulo:'ACEITAMOS PIX', descricao:'Pagamento rápido e seguro', cor:'#10b981', fonte:100, imagem:'', tempo:8 },
     { tipo:'clima', tempo:8 }
 ];
 
@@ -242,6 +243,7 @@ function carregarConteudo() {
         var antes = JSON.stringify(conteudo);
         conteudo = c || conteudo;
         if (!conteudo.slides || conteudo.slides.length === 0) conteudo.slides = SLIDES_DEFAULT;
+        if (!conteudo.tempoBemvindo) conteudo.tempoBemvindo = 15;
         document.getElementById('idle-logo').textContent = conteudo.loja;
         document.getElementById('store-name-display').textContent = conteudo.loja;
         document.getElementById('clima-cidade').textContent = conteudo.cidade || 'Cachoeirinha - RS';
@@ -249,6 +251,32 @@ function carregarConteudo() {
             if (modo !== 'welcome') iniciarCarrossel();
         }
     })
+    .catch(function(){});
+}
+
+// ========== IMAGENS (link ou enviadas pro banco) ==========
+var cacheImagens = {};
+
+function obterImagem(chave, cb) {
+    if (!chave) { cb(null); return; }
+    if (/^https?:\/\//.test(chave)) { cb(chave); return; }
+    if (cacheImagens[chave]) { cb(cacheImagens[chave]); return; }
+    fetch(FIREBASE_IMAGENS + chave + '.json')
+    .then(function(r){ return r.json(); })
+    .then(function(d){ cacheImagens[chave] = d; cb(d); })
+    .catch(function(){ cb(null); });
+}
+
+function preCarregarProximo() {
+    var s = conteudo.slides[slideIndex + 1];
+    if (!s) return;
+    var chave = null;
+    if (s.tipo === 'imagem') chave = s.url;
+    if (s.tipo === 'promo' && s.imagem) chave = s.imagem;
+    if (!chave || /^https?:\/\//.test(chave) || cacheImagens[chave]) return;
+    fetch(FIREBASE_IMAGENS + chave + '.json')
+    .then(function(r){ return r.json(); })
+    .then(function(d){ cacheImagens[chave] = d; })
     .catch(function(){});
 }
 
@@ -276,7 +304,7 @@ function carregarClima() {
     .catch(function(){});
 }
 
-// ========== CARROSSEL (com tempo por slide) ==========
+// ========== CARROSSEL (tempo por tela) ==========
 var slideIndex = 0;
 var carouselTimer = null;
 var modo = 'idle';
@@ -303,6 +331,7 @@ function proximoSlide(){
         if (slideIndex >= slides.length) { mostrarIdle(); agendar(8000); return; }
     }
     mostrarSlide(slides[slideIndex]);
+    preCarregarProximo();
     agendar(tempoSlide(slides[slideIndex]));
 }
 
@@ -312,6 +341,7 @@ function esconderTudo(){
     document.getElementById('clima').classList.remove('show');
     document.getElementById('video-slide').classList.remove('show');
     document.getElementById('promo-glow').style.opacity = '0';
+    document.getElementById('promo').style.backgroundImage = 'none';
     pararVideo();
 }
 
@@ -343,11 +373,11 @@ function mostrarPromo(p){
 
     var promo = document.getElementById('promo');
     if (p.imagem) {
-        promo.style.backgroundImage = 'linear-gradient(rgba(6,6,18,0.72), rgba(6,6,18,0.72)), url("' + p.imagem + '")';
-        promo.style.backgroundSize = 'cover';
-        promo.style.backgroundPosition = 'center';
-    } else {
-        promo.style.backgroundImage = 'none';
+        obterImagem(p.imagem, function(src){
+            if (src) {
+                promo.style.backgroundImage = 'linear-gradient(rgba(6,6,18,0.72), rgba(6,6,18,0.72)), url("' + src + '")';
+            }
+        });
     }
 
     promo.style.setProperty('--cor', cor);
@@ -358,7 +388,12 @@ function mostrarPromo(p){
 
 function mostrarImagem(s){
     esconderTudo();
-    document.getElementById('imagem-img').src = s.url || '';
+    var img = document.getElementById('imagem-img');
+    img.style.objectFit = (s.ajuste === 'cover') ? 'cover' : 'contain';
+    img.src = '';
+    obterImagem(s.url, function(src){
+        if (src) img.src = src;
+    });
     document.getElementById('imagem').classList.add('show');
 }
 
@@ -419,7 +454,8 @@ function mostrarBemVindo(nome){
     document.getElementById('sb-cliente').textContent = nome;
 
     if (displayTimeout) clearTimeout(displayTimeout);
-    displayTimeout = setTimeout(voltarIdle, 15000);
+    var tempo = (parseInt(conteudo.tempoBemvindo) || 15) * 1000;
+    displayTimeout = setTimeout(voltarIdle, tempo);
 }
 
 function voltarIdle(){
