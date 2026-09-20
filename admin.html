@@ -89,6 +89,12 @@ input[type="range"]{padding:0;accent-color:#d9b759;cursor:pointer}
         <input type="text" id="cidade" placeholder="Cachoeirinha - RS">
         <label>⏳ Tempo do BEM-VINDO (segundos)</label>
         <input type="number" id="tempoBemvindo" min="5" max="120" value="15">
+        <label>Logo da loja (aparece nas promoções)</label>
+        <div class="preview" id="logo-preview" data-pv=""></div>
+        <div class="img-btns">
+            <button type="button" onclick="escolherLogo()">📎 Enviar logo</button>
+        </div>
+        <input type="text" id="logo-input" data-field="logo" placeholder="...ou cole um link (https://...)" oninput="logo=this.value;atualizarLogoPreview()">
     </div>
 
     <div class="card">
@@ -145,6 +151,7 @@ var FIREBASE_IMAGENS = 'https://loja-bemvindo-default-rtdb.firebaseio.com/imagen
 var SENHA = 'togo2026';
 var slides = [];
 var uploadTarget = null;
+var logo = '';
 
 var tela = { rotacao:0, zoom:100, fsNome:100, fsSaudacao:72, fsLogo:24, fsIdleLogo:60, fsPromoTitulo:88, fsPromoDesc:32 };
 
@@ -169,11 +176,11 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function msg(t, ok){var m=document.getElementById('msg');m.textContent=t;m.className='msg '+(ok?'ok':'erro');}
 
 function novoSlide(tipo){
-    if(tipo==='promo') return {tipo:'promo', titulo:'', descricao:'', cor:'#d9b759', fonte:100, imagem:'', tempo:8};
+    if(tipo==='promo') return {tipo:'promo', titulo:'', preco:'', descricao:'', cor:'#d9b759', fonte:100, imagem:'', tempo:8};
     if(tipo==='imagem') return {tipo:'imagem', url:'', ajuste:'contain', tempo:8};
     if(tipo==='video') return {tipo:'video', url:'', tempo:30};
     if(tipo==='clima') return {tipo:'clima', tempo:8};
-    return {tipo:'promo', titulo:'', descricao:'', cor:'#d9b759', fonte:100, imagem:'', tempo:8};
+    return {tipo:'promo', titulo:'', preco:'', descricao:'', cor:'#d9b759', fonte:100, imagem:'', tempo:8};
 }
 
 function addSlide(tipo){ slides.push(novoSlide(tipo)); render(); }
@@ -188,6 +195,10 @@ function escolherArquivo(i, field){
     uploadTarget = { i:i, field:field };
     document.getElementById('file').click();
 }
+function escolherLogo(){
+    uploadTarget = { i:-1, field:'logo' };
+    document.getElementById('file').click();
+}
 document.getElementById('file').addEventListener('change', function(){
     var f = this.files[0];
     this.value = '';
@@ -195,9 +206,15 @@ document.getElementById('file').addEventListener('change', function(){
     var t = uploadTarget;
     comprimir(f, function(dataUrl){
         subir(dataUrl, function(key){
-            slides[t.i][t.field] = key;
-            render();
-            msg('Imagem enviada! Ela já vai aparecer na TV.', true);
+            if (t.i === -1 && t.field === 'logo') {
+                logo = key;
+                atualizarLogoPreview();
+                msg('Logo enviado!', true);
+            } else {
+                slides[t.i][t.field] = key;
+                render();
+                msg('Imagem enviada! Ela já vai aparecer na TV.', true);
+            }
         });
     });
 });
@@ -277,14 +294,16 @@ function tempoHTML(s,i){
 
 function promoBody(s,i){
     return '<div class="mini-promo" data-mini="'+i+'"></div>' +
-        '<label>Título</label>' +
-        '<input type="text" data-field="titulo" value="'+esc(s.titulo)+'" placeholder="OFERTA DO DIA">' +
+        '<label>Nome do produto</label>' +
+        '<input type="text" data-field="titulo" value="'+esc(s.titulo)+'" placeholder="Ex: PIZZA GRANDE">' +
+        '<label>Preço (opcional)</label>' +
+        '<input type="text" data-field="preco" value="'+esc(s.preco)+'" placeholder="Ex: R$ 29,90">' +
         '<label>Descrição</label>' +
-        '<textarea data-field="descricao" placeholder="Confira as novidades">'+esc(s.descricao)+'</textarea>' +
+        '<textarea data-field="descricao" placeholder="Ex: Somente hoje">'+esc(s.descricao)+'</textarea>' +
         '<div class="row2"><label>Cor</label><input type="color" data-field="cor" value="'+(s.cor||'#d9b759')+'"></div>' +
         '<label>Tamanho da letra: <span class="fonte-val">'+(s.fonte||100)+'%</span></label>' +
         '<input type="range" data-field="fonte" min="50" max="250" value="'+(s.fonte||100)+'">' +
-        '<label>Imagem de fundo (opcional)</label>' +
+        '<label>Imagem (opcional)</label>' +
         imgBox(i,'imagem',s.imagem) +
         tempoHTML(s,i);
 }
@@ -357,7 +376,8 @@ function atualizarMini(card, i){
     var s = slides[i] || {};
     var f = (parseInt(s.fonte)||100)/100;
     el.style.borderColor = s.cor || '#d9b759';
-    el.innerHTML = '<div class="mp-titulo" style="color:'+(s.cor||'#d9b759')+';font-size:'+Math.round(30*f)+'px">'+esc(s.titulo||'TÍTULO')+'</div>' +
+    el.innerHTML = '<div class="mp-titulo" style="color:'+(s.cor||'#d9b759')+';font-size:'+Math.round(30*f)+'px">'+esc(s.titulo||'PRODUTO')+'</div>' +
+        (s.preco ? '<div class="mp-preco" style="color:#d9b759;font-weight:900;font-size:'+Math.round(22*f)+'px;margin-top:4px">'+esc(s.preco)+'</div>' : '') +
         '<div class="mp-desc" style="font-size:'+Math.round(13*f)+'px">'+esc(s.descricao||'descrição')+'</div>';
 }
 
@@ -369,6 +389,7 @@ function aoEditar(e){
     var f = e.target.dataset.field;
     if(!f || !slides[i]) return;
     if(f==='titulo') slides[i].titulo = e.target.value;
+    else if(f==='preco') slides[i].preco = e.target.value;
     else if(f==='descricao') slides[i].descricao = e.target.value;
     else if(f==='cor') slides[i].cor = e.target.value;
     else if(f==='fonte'){ slides[i].fonte = parseInt(e.target.value)||100; var lv=card.querySelector('.fonte-val'); if(lv) lv.textContent=slides[i].fonte+'%'; }
@@ -392,6 +413,19 @@ document.getElementById('slides').addEventListener('input', aoEditar);
 document.getElementById('slides').addEventListener('change', aoEditar);
 
 // ===== CARREGAR / SALVAR =====
+function atualizarLogoPreview(){
+    var el = document.getElementById('logo-preview');
+    if(!logo){ el.innerHTML = '<div class="ph">Sem logo — clique em "Enviar logo"</div>'; return; }
+    if(/^https?:\/\//.test(logo)){ el.innerHTML = '<img src="'+esc(logo)+'">'; }
+    else {
+        el.innerHTML = '<div class="ph">Carregando…</div>';
+        fetch(FIREBASE_IMAGENS + logo + '.json')
+        .then(function(r){return r.json()})
+        .then(function(d){ el.innerHTML = '<img src="'+d+'">'; })
+        .catch(function(){ el.innerHTML = '<div class="ph">Logo não encontrado</div>'; });
+    }
+}
+
 function carregar(){
     fetch(FIREBASE_URL)
     .then(function(r){return r.json()})
@@ -401,6 +435,9 @@ function carregar(){
         document.getElementById('mensagem').value=c.mensagem||'';
         document.getElementById('cidade').value=c.cidade||'';
         document.getElementById('tempoBemvindo').value=c.tempoBemvindo||15;
+        logo = c.logo||'';
+        document.getElementById('logo-input').value = logo;
+        atualizarLogoPreview();
         if(c.tela){ tela = Object.assign({}, tela, c.tela); }
         carregarControlesTela();
         slides = c.slides||[];
@@ -414,7 +451,7 @@ function salvar(){
 
     var limpo = slides.map(function(s){
         var o = { tipo:s.tipo, tempo: parseInt(s.tempo)||8 };
-        if(s.tipo==='promo'){ o.titulo=(s.titulo||'').trim(); o.descricao=(s.descricao||'').trim(); o.cor=s.cor||'#d9b759'; o.fonte=parseInt(s.fonte)||100; o.imagem=(s.imagem||'').trim(); }
+        if(s.tipo==='promo'){ o.titulo=(s.titulo||'').trim(); o.preco=(s.preco||'').trim(); o.descricao=(s.descricao||'').trim(); o.cor=s.cor||'#d9b759'; o.fonte=parseInt(s.fonte)||100; o.imagem=(s.imagem||'').trim(); }
         if(s.tipo==='imagem'){ o.url=(s.url||'').trim(); o.ajuste=s.ajuste==='cover'?'cover':'contain'; }
         if(s.tipo==='video'){ o.url=(s.url||'').trim(); }
         return o;
@@ -425,6 +462,7 @@ function salvar(){
         mensagem: document.getElementById('mensagem').value.trim(),
         cidade: document.getElementById('cidade').value.trim(),
         tempoBemvindo: parseInt(document.getElementById('tempoBemvindo').value)||15,
+        logo: (logo||'').trim(),
         tela: tela,
         slides: limpo
     };

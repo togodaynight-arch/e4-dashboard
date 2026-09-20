@@ -24,7 +24,9 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 .promo{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px;opacity:0;transition:opacity 0.6s;background-size:cover;background-position:center}
 .promo.show{display:flex;opacity:1}
 .promo-tag{font-size:18px;letter-spacing:8px;color:var(--cor,#d9b759);text-transform:uppercase;margin-bottom:24px;font-weight:600}
-.promo-titulo{font-size:var(--fs-promo-titulo,88px);font-weight:900;color:#fff;letter-spacing:2px;line-height:1.05;margin-bottom:20px;text-shadow:0 0 60px var(--cor,rgba(217,183,89,0.4))}
+.promo-logo{max-height:80px;max-width:70%;margin-bottom:20px;display:none}
+.promo-titulo{font-size:var(--fs-promo-titulo,88px);font-weight:900;color:#fff;letter-spacing:2px;line-height:1.05;margin-bottom:16px;text-shadow:0 0 60px var(--cor,rgba(217,183,89,0.4))}
+.promo-preco{font-size:var(--fs-preco,96px);font-weight:900;color:var(--cor,#d9b759);letter-spacing:2px;margin-bottom:16px;display:none;text-shadow:0 0 50px var(--cor,rgba(217,183,89,0.5))}
 .promo-desc{font-size:var(--fs-promo-desc,32px);color:#c9d0ee;letter-spacing:2px;font-weight:300;max-width:80%}
 .promo-glow{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .6s;background:radial-gradient(circle at 50% 35%, var(--cor,rgba(217,183,89,0.25)) 0%, transparent 55%)}
 
@@ -93,8 +95,10 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
         </div>
 
         <div class="promo" id="promo">
+            <img class="promo-logo" id="promo-logo" src="" alt="">
             <div class="promo-tag">PROMOÇÃO</div>
             <div class="promo-titulo" id="promo-titulo"></div>
+            <div class="promo-preco" id="promo-preco"></div>
             <div class="promo-desc" id="promo-desc"></div>
         </div>
 
@@ -416,6 +420,25 @@ function mostrarPromo(p){
     document.getElementById('promo-desc').textContent = p.descricao;
     document.getElementById('promo-titulo').style.fontSize = Math.round(tela.fsPromoTitulo * f/100) + 'px';
     document.getElementById('promo-desc').style.fontSize = Math.round(tela.fsPromoDesc * f/100) + 'px';
+
+    // preço (gerador automático de promoção)
+    var precoEl = document.getElementById('promo-preco');
+    if (p.preco) {
+        precoEl.textContent = p.preco;
+        precoEl.style.display = 'block';
+    } else {
+        precoEl.style.display = 'none';
+    }
+
+    // logo da loja
+    var logoEl = document.getElementById('promo-logo');
+    if (conteudo.logo) {
+        obterImagem(conteudo.logo, function(src){
+            if (src) { logoEl.src = src; logoEl.style.display = 'block'; }
+        });
+    } else {
+        logoEl.style.display = 'none';
+    }
 
     var promo = document.getElementById('promo');
     if (p.imagem) {
