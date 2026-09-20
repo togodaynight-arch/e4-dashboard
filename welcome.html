@@ -32,12 +32,17 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 .imagem.show{display:block;opacity:1}
 .imagem img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 
-.clima{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0;transition:opacity .6s}
+.clima{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;opacity:0;transition:opacity .6s}
 .clima.show{display:flex;opacity:1}
-.clima-emoji{font-size:70px;margin-bottom:10px}
-.clima-temp{font-size:130px;font-weight:900;color:#fff;line-height:1;text-shadow:0 0 70px rgba(90,160,255,0.45)}
-.clima-cidade{font-size:30px;color:#7a86b8;letter-spacing:4px;margin-top:18px;text-transform:uppercase}
-.clima-tag{font-size:16px;letter-spacing:6px;color:#5aa0ff;text-transform:uppercase;margin-bottom:14px;font-weight:600}
+.clima-tag{font-size:22px;letter-spacing:4px;color:#5aa0ff;text-transform:uppercase;margin-bottom:34px;font-weight:600}
+.clima-dias{display:flex;gap:18px;justify-content:center;flex-wrap:wrap}
+.clima-dia{background:rgba(20,25,50,0.55);border:1px solid #2a2a3a;border-radius:18px;padding:22px 20px;min-width:150px}
+.clima-dia-nome{font-size:18px;color:#7a86b8;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px}
+.clima-dia-emoji{font-size:46px;margin-bottom:10px}
+.clima-dia-max{font-size:28px;font-weight:800;color:#fff}
+.clima-dia-min{font-size:18px;color:#7a86b8;margin-top:2px}
+.clima-dia.hoje{border-color:#d9b759;background:rgba(217,183,89,0.08)}
+.clima-dia.hoje .clima-dia-nome{color:#d9b759}
 
 .video-slide{position:fixed;inset:0;display:none;opacity:0;transition:opacity .6s;background:#000}
 .video-slide.show{display:block;opacity:1}
@@ -98,10 +103,8 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
         </div>
 
         <div class="clima" id="clima">
-            <div class="clima-tag">Clima agora</div>
-            <div class="clima-emoji" id="clima-emoji">🌡️</div>
-            <div class="clima-temp" id="clima-temp">--°C</div>
-            <div class="clima-cidade" id="clima-cidade">Cachoeirinha - RS</div>
+            <div class="clima-tag">Previsão do tempo · <span id="clima-cidade">Cachoeirinha - RS</span></div>
+            <div class="clima-dias" id="clima-dias"></div>
         </div>
 
         <div class="video-slide" id="video-slide">
@@ -322,12 +325,27 @@ function emojiClima(code){
 }
 
 function carregarClima() {
-    fetch('https://api.open-meteo.com/v1/forecast?latitude=' + LAT + '&longitude=' + LON + '&current_weather=true')
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=' + LAT + '&longitude=' + LON + '&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto&forecast_days=6')
     .then(function(r){ return r.json(); })
     .then(function(d){
-        if (!d.current_weather) return;
-        document.getElementById('clima-temp').textContent = Math.round(d.current_weather.temperature) + '°C';
-        document.getElementById('clima-emoji').textContent = emojiClima(d.current_weather.weathercode);
+        var dias = d.daily || {};
+        var nomes = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+        var html = '';
+        var tempo = dias.time || [];
+        for (var i = 0; i < tempo.length; i++) {
+            var dt = new Date(tempo[i] + 'T12:00:00');
+            var nome = (i === 0) ? 'HOJE' : nomes[dt.getDay()];
+            var max = Math.round(dias.temperature_2m_max[i]);
+            var min = Math.round(dias.temperature_2m_min[i]);
+            var emoji = emojiClima(dias.weathercode[i]);
+            html += '<div class="clima-dia' + (i === 0 ? ' hoje' : '') + '">' +
+                '<div class="clima-dia-nome">' + nome + '</div>' +
+                '<div class="clima-dia-emoji">' + emoji + '</div>' +
+                '<div class="clima-dia-max">' + max + '°</div>' +
+                '<div class="clima-dia-min">' + min + '°</div>' +
+            '</div>';
+        }
+        document.getElementById('clima-dias').innerHTML = html;
     })
     .catch(function(){});
 }
