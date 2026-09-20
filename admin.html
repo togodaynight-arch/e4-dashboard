@@ -59,6 +59,12 @@ input[type="range"]{padding:0;accent-color:#d9b759;cursor:pointer}
 .mini-promo{background:#0a0a12;border:1px solid #222;border-radius:8px;padding:14px;text-align:center;margin-bottom:10px}
 .mini-promo .mp-titulo{font-weight:900;letter-spacing:1px;line-height:1.1}
 .mini-promo .mp-desc{color:#c9d0ee;font-weight:300;margin-top:4px}
+
+/* tela (rotação, zoom, letras) */
+.rot-btns{display:flex;gap:6px;margin-bottom:10px}
+.rot-btns button{flex:1;padding:9px;border:none;border-radius:7px;background:#1a1a2e;border:1px solid #333;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.rot-btns button.active{background:#d9b759;color:#000;border-color:#d9b759}
+.range-val{color:#d9b759;font-weight:700}
 </style>
 </head>
 <body>
@@ -86,6 +92,38 @@ input[type="range"]{padding:0;accent-color:#d9b759;cursor:pointer}
     </div>
 
     <div class="card">
+        <h2>🖥️ Tela (giro, zoom e letras)</h2>
+        <label>Girar tela</label>
+        <div class="rot-btns" id="rot-btns">
+            <button type="button" data-r="0" onclick="setRotacao(0)">0°</button>
+            <button type="button" data-r="90" onclick="setRotacao(90)">90°</button>
+            <button type="button" data-r="180" onclick="setRotacao(180)">180°</button>
+            <button type="button" data-r="270" onclick="setRotacao(270)">270°</button>
+        </div>
+
+        <label>Zoom da tela: <span class="range-val" id="zoom-val">100%</span></label>
+        <input type="range" id="cfg-zoom" min="50" max="200" value="100" oninput="setZoom(this.value)">
+
+        <label>Letra do nome: <span class="range-val" id="fs-nome-val">100px</span></label>
+        <input type="range" id="cfg-fs-nome" min="40" max="220" value="100" oninput="setFont('fsNome','fs-nome-val',this.value)">
+
+        <label>Letra da saudação: <span class="range-val" id="fs-saudacao-val">72px</span></label>
+        <input type="range" id="cfg-fs-saudacao" min="30" max="180" value="72" oninput="setFont('fsSaudacao','fs-saudacao-val',this.value)">
+
+        <label>Logo (boas-vindas): <span class="range-val" id="fs-logo-val">24px</span></label>
+        <input type="range" id="cfg-fs-logo" min="12" max="90" value="24" oninput="setFont('fsLogo','fs-logo-val',this.value)">
+
+        <label>Logo (espera): <span class="range-val" id="fs-idle-logo-val">60px</span></label>
+        <input type="range" id="cfg-fs-idle-logo" min="20" max="160" value="60" oninput="setFont('fsIdleLogo','fs-idle-logo-val',this.value)">
+
+        <label>Título da promoção: <span class="range-val" id="fs-promo-titulo-val">88px</span></label>
+        <input type="range" id="cfg-fs-promo-titulo" min="30" max="200" value="88" oninput="setFont('fsPromoTitulo','fs-promo-titulo-val',this.value)">
+
+        <label>Descrição da promoção: <span class="range-val" id="fs-promo-desc-val">32px</span></label>
+        <input type="range" id="cfg-fs-promo-desc" min="14" max="110" value="32" oninput="setFont('fsPromoDesc','fs-promo-desc-val',this.value)">
+    </div>
+
+    <div class="card">
         <h2>🖼️ Telas (rodízio)</h2>
         <div id="slides"></div>
         <div class="add-row">
@@ -107,6 +145,23 @@ var FIREBASE_IMAGENS = 'https://loja-bemvindo-default-rtdb.firebaseio.com/imagen
 var SENHA = 'togo2026';
 var slides = [];
 var uploadTarget = null;
+
+var tela = { rotacao:0, zoom:100, fsNome:100, fsSaudacao:72, fsLogo:24, fsIdleLogo:60, fsPromoTitulo:88, fsPromoDesc:32 };
+
+function setRotacao(g){ tela.rotacao = g; document.querySelectorAll('#rot-btns button').forEach(function(b){ b.classList.toggle('active', parseInt(b.dataset.r)===g); }); }
+function setZoom(v){ tela.zoom = parseInt(v); document.getElementById('zoom-val').textContent = v + '%'; }
+function setFont(key, valId, v){ tela[key] = parseInt(v); document.getElementById(valId).textContent = v + 'px'; }
+
+function carregarControlesTela(){
+    document.getElementById('cfg-zoom').value = tela.zoom; document.getElementById('zoom-val').textContent = tela.zoom + '%';
+    document.getElementById('cfg-fs-nome').value = tela.fsNome; document.getElementById('fs-nome-val').textContent = tela.fsNome + 'px';
+    document.getElementById('cfg-fs-saudacao').value = tela.fsSaudacao; document.getElementById('fs-saudacao-val').textContent = tela.fsSaudacao + 'px';
+    document.getElementById('cfg-fs-logo').value = tela.fsLogo; document.getElementById('fs-logo-val').textContent = tela.fsLogo + 'px';
+    document.getElementById('cfg-fs-idle-logo').value = tela.fsIdleLogo; document.getElementById('fs-idle-logo-val').textContent = tela.fsIdleLogo + 'px';
+    document.getElementById('cfg-fs-promo-titulo').value = tela.fsPromoTitulo; document.getElementById('fs-promo-titulo-val').textContent = tela.fsPromoTitulo + 'px';
+    document.getElementById('cfg-fs-promo-desc').value = tela.fsPromoDesc; document.getElementById('fs-promo-desc-val').textContent = tela.fsPromoDesc + 'px';
+    document.querySelectorAll('#rot-btns button').forEach(function(b){ b.classList.toggle('active', parseInt(b.dataset.r)===tela.rotacao); });
+}
 
 var TIPO_LABEL = { promo:'📝 Texto', imagem:'🖼️ Imagem', video:'🎬 Vídeo', clima:'🌡️ Clima' };
 
@@ -346,6 +401,8 @@ function carregar(){
         document.getElementById('mensagem').value=c.mensagem||'';
         document.getElementById('cidade').value=c.cidade||'';
         document.getElementById('tempoBemvindo').value=c.tempoBemvindo||15;
+        if(c.tela){ tela = Object.assign({}, tela, c.tela); }
+        carregarControlesTela();
         slides = c.slides||[];
         render();
     })
@@ -368,6 +425,7 @@ function salvar(){
         mensagem: document.getElementById('mensagem').value.trim(),
         cidade: document.getElementById('cidade').value.trim(),
         tempoBemvindo: parseInt(document.getElementById('tempoBemvindo').value)||15,
+        tela: tela,
         slides: limpo
     };
 

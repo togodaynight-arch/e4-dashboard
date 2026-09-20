@@ -156,6 +156,8 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
     <input type="range" id="cfg-fs-promo-desc" min="14" max="110" value="32" oninput="setFont('fsPromoDesc','fs-promo-desc-val',this.value,'px')">
     </details>
 
+    <button onclick="salvarTela()" style="width:100%;padding:11px;margin:4px 0 12px;border:none;border-radius:6px;background:#3b82f6;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">💾 Salvar ajustes da tela</button>
+
     <details open>
     <summary>🧪 Teste</summary>
     <label>Nome do cliente</label>
@@ -182,16 +184,13 @@ var LAT = -29.95111, LON = -51.09389;
 
 var conteudo = { loja:'TRANS BUS', mensagem:'BEM-VINDO', cidade:'Cachoeirinha - RS', slides:[], tempoBemvindo:15 };
 
-var tela = {
-    rotacao: parseInt(localStorage.getItem('cfg-rotacao') || '0'),
-    zoom: parseInt(localStorage.getItem('cfg-zoom') || '100'),
-    fsNome: parseInt(localStorage.getItem('cfg-fs-nome') || '100'),
-    fsSaudacao: parseInt(localStorage.getItem('cfg-fs-saudacao') || '72'),
-    fsLogo: parseInt(localStorage.getItem('cfg-fs-logo') || '24'),
-    fsIdleLogo: parseInt(localStorage.getItem('cfg-fs-idle-logo') || '60'),
-    fsPromoTitulo: parseInt(localStorage.getItem('cfg-fs-promo-titulo') || '88'),
-    fsPromoDesc: parseInt(localStorage.getItem('cfg-fs-promo-desc') || '32')
-};
+var TELA_DEFAULT = { rotacao:0, zoom:100, fsNome:100, fsSaudacao:72, fsLogo:24, fsIdleLogo:60, fsPromoTitulo:88, fsPromoDesc:32 };
+
+function lerTelaLocal(){
+    try { return JSON.parse(localStorage.getItem('tela-local') || 'null') || {}; } catch(e){ return {}; }
+}
+
+var tela = Object.assign({}, TELA_DEFAULT, lerTelaLocal());
 
 var FS_KEYS = { fsNome:'--fs-nome', fsSaudacao:'--fs-saudacao', fsLogo:'--fs-logo', fsIdleLogo:'--fs-idle-logo', fsPromoTitulo:'--fs-promo-titulo', fsPromoDesc:'--fs-promo-desc' };
 
@@ -206,9 +205,9 @@ function aplicarTela() {
     document.querySelectorAll('#rot-btns button').forEach(function(b){ b.classList.toggle('active', parseInt(b.dataset.r) === tela.rotacao); });
 }
 
-function setRotacao(g){ tela.rotacao = g; localStorage.setItem('cfg-rotacao', g); aplicarTela(); }
-function setZoom(v){ tela.zoom = parseInt(v); document.getElementById('zoom-val').textContent = v + '%'; localStorage.setItem('cfg-zoom', tela.zoom); aplicarTela(); }
-function setFont(key, valId, v, unit){ tela[key] = parseInt(v); document.getElementById(valId).textContent = v + unit; localStorage.setItem('cfg-' + key, tela[key]); aplicarTela(); }
+function setRotacao(g){ tela.rotacao = g; aplicarTela(); }
+function setZoom(v){ tela.zoom = parseInt(v); document.getElementById('zoom-val').textContent = v + '%'; aplicarTela(); }
+function setFont(key, valId, v, unit){ tela[key] = parseInt(v); document.getElementById(valId).textContent = v + unit; aplicarTela(); }
 
 function carregarControlesTela() {
     document.getElementById('cfg-zoom').value = tela.zoom; document.getElementById('zoom-val').textContent = tela.zoom + '%';
@@ -219,6 +218,32 @@ function carregarControlesTela() {
     document.getElementById('cfg-fs-promo-titulo').value = tela.fsPromoTitulo; document.getElementById('fs-promo-titulo-val').textContent = tela.fsPromoTitulo + 'px';
     document.getElementById('cfg-fs-promo-desc').value = tela.fsPromoDesc; document.getElementById('fs-promo-desc-val').textContent = tela.fsPromoDesc + 'px';
     aplicarTela();
+}
+
+// Aplica os ajustes vindos do servidor (sem sobrescrever o que a pessoa está mexendo agora)
+function definirTelaServidor(novo){
+    if (!novo) return;
+    var antigo = JSON.stringify(tela);
+    tela = Object.assign({}, TELA_DEFAULT, novo);
+    carregarControlesTela();
+    if (JSON.stringify(tela) !== antigo) aplicarTela();
+}
+
+// Salva os ajustes da tela no banco (e também no navegador, por segurança)
+function salvarTela(){
+    conteudo.tela = tela;
+    localStorage.setItem('tela-local', JSON.stringify(tela));
+    fetch(FIREBASE_URL, {
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(conteudo)
+    })
+    .then(function(){ 
+        var b = document.querySelector('button[onclick="salvarTela()"]');
+        var txt = b.textContent; b.textContent = '✅ Ajustes salvos!'; b.style.background = '#10b981';
+        setTimeout(function(){ b.textContent = txt; b.style.background = '#3b82f6'; }, 2000);
+    })
+    .catch(function(){ alert('Erro ao salvar. Verifique a internet.'); });
 }
 
 function abrirPanel(){ document.getElementById('panel').classList.add('open'); }
@@ -247,6 +272,10 @@ function carregarConteudo() {
         document.getElementById('idle-logo').textContent = conteudo.loja;
         document.getElementById('store-name-display').textContent = conteudo.loja;
         document.getElementById('clima-cidade').textContent = conteudo.cidade || 'Cachoeirinha - RS';
+        // ajustes de tela vindos do painel de mídia (só aplica se ninguém está mexendo aqui)
+        if (!document.getElementById('panel').classList.contains('open')) {
+            definirTelaServidor(conteudo.tela);
+        }
         if (JSON.stringify(conteudo) !== antes) {
             if (modo !== 'welcome') iniciarCarrossel();
         }
