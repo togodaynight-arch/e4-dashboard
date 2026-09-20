@@ -177,12 +177,11 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 <div class="hint">Pressione <b>C</b> para abrir os ajustes</div>
 
 <script>
-var API_BASE = 'https://e4-dashboard-2lvk.onrender.com';
 var FIREBASE_URL = 'https://loja-bemvindo-default-rtdb.firebaseio.com/config.json';
 var FIREBASE_IMAGENS = 'https://loja-bemvindo-default-rtdb.firebaseio.com/imagens/';
 var LAT = -29.95111, LON = -51.09389;
 
-var conteudo = { loja:'TRANS BUS', mensagem:'BEM-VINDO', cidade:'Cachoeirinha - RS', slides:[], tempoBemvindo:15 };
+var conteudo = { loja:'TRANS BUS', mensagem:'BEM-VINDO', cidade:'Cachoeirinha - RS', slides:[], tempoBemvindo:8 };
 
 var TELA_DEFAULT = { rotacao:0, zoom:100, fsNome:100, fsSaudacao:72, fsLogo:24, fsIdleLogo:60, fsPromoTitulo:88, fsPromoDesc:32 };
 
@@ -506,24 +505,6 @@ function simularEntrada(){
     fecharPanel();
 }
 
-// ========== ENTRADAS REAIS ==========
-var ultimaEntradaId = null;
-
-function verificarEntradasReais(){
-    fetch(API_BASE + '/public/entrada')
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-        if (!data.ok || !data.entrada) return;
-        var e = data.entrada;
-        document.getElementById('sb-entrada').textContent = e.cliente || '---';
-        if (e.id !== ultimaEntradaId) {
-            ultimaEntradaId = e.id;
-            if (modo !== 'welcome' && e.cliente) mostrarBemVindo(e.cliente);
-        }
-    })
-    .catch(function(){});
-}
-
 // ========== INICIALIZAÇÃO ==========
 carregarControlesTela();
 carregarConteudo();
@@ -531,7 +512,6 @@ carregarClima();
 iniciarCarrossel();
 
 setInterval(carregarConteudo, 10000);
-setInterval(verificarEntradasReais, 5000);
 setInterval(carregarClima, 15 * 60 * 1000);
 </script>
 </body>
