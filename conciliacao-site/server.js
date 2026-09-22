@@ -7,6 +7,7 @@ const path = require('path');
 const PORT = 3001;
 const API_BASE = 'https://portal.e4sistemas.com.br';
 const CLIENT_ID = '215';
+const E4_PRODUTO = process.env.E4_PRODUTO || 'mercado-app';
 const TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjbGllbnRlIjoiMjE1IiwiZGF0YSI6IjIwMjYtMDQtMjkgMTU6NDU6MTQiLCJkb2N1bWVudG8iOiJ2cDAwMDA3MzUzLXAwMDEiLCJlbmRlcmVjbyI6InJ1YSB0cmFqYW5vIHJlaXMiLCJjb250YXRvIjoiY2xpZW50ZSIsInRlbGVmb25lIjoiMTE5OTk5OTkiLCJpc3MiOiJlNHNpc3RlbWFzLmNvbS5iciIsInN1YiI6IkF1dGVudGljYVx1MDBlN1x1MDBlM28iLCJhdWQiOiJUZXJjZWlyb3MgdmlhIEFQSSJ9.VKTPNRxHJauxQnSc/ur7cEpc9P6XO/lLYDacj8dj450=';
 const PORTAL_USER = 'togodaynight@gmail.com';
 const PORTAL_PASS = '190690';
@@ -55,7 +56,7 @@ function proxyRequest(req, res) {
         const fullUrl = `${API_BASE}${req.url}`;
         const options = {
             method: req.method,
-            headers: { 'Content-Type': 'application/json', 'X-Cliente-Id': CLIENT_ID, 'Authorization': `Bearer ${TOKEN}` }
+            headers: { 'Content-Type': 'application/json', 'X-Cliente-Id': CLIENT_ID, 'X-Produto': E4_PRODUTO, 'Authorization': `Bearer ${TOKEN}` }
         };
         if (req.method === 'GET') delete options.headers['Content-Type'];
 

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Compras</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="/compras/style.css">
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="nav-inner">
+            <a class="brand-logo">
+                <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#fff"/><path d="M7 14L11 18L21 8" stroke="#32bcad" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span>E4 Relatório de Compras</span>
+            </a>
+            <a href="/conciliacao" class="nav-link" title="Ir para a Conciliação">
+                <i class="material-icons" style="font-size:16px;">chevron_left</i> Conciliação
+            </a>
+            <span class="nav-date" id="nav-date"></span>
+        </div>
+    </nav>
+
+    <div class="page-body">
+        <div class="summary-bar" id="summary-bar">
+            <div class="stat-card">
+                <span>Produtos distintas</span>
+                <b id="st-produtos">0</b>
+            </div>
+            <div class="stat-card">
+                <span>Qtd. vendida no período</span>
+                <b id="st-qtd">0</b>
+            </div>
+            <div class="stat-card">
+                <span>Valor vendido (R$)</span>
+                <b id="st-valor">R$ 0,00</b>
+            </div>
+            <div class="stat-card stat-card-alert">
+                <span><i class="material-icons" style="font-size:14px;vertical-align:middle;">warning</i> Alta rotatividade (comprar p/ não quebrar)</span>
+                <b id="st-alerta">0</b>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label>Período</label>
+                <div class="period-select" id="period-select">
+                    <button data-dias="ontem">Ontem</button>
+                    <button data-dias="7" class="active">7 dias</button>
+                    <button data-dias="10">10 dias</button>
+                    <button data-dias="15">15 dias</button>
+                    <button data-dias="30">30 dias</button>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>Visualizar</label>
+                <div class="view-toggle" id="view-toggle">
+                    <button data-view="categoria" class="active" title="Agrupado por categoria"><i class="material-icons" style="font-size:14px;">folder</i> Categoria</button>
+                    <button data-view="alfa" title="Em ordem alfabética"><i class="material-icons" style="font-size:14px;">sort_by_alpha</i> Alfabética</button>
+                    <button data-view="top" title="Mais vendidos primeiro"><i class="material-icons" style="font-size:14px;">trending_up</i> Mais vendidos</button>
+                </div>
+            </div>
+
+            <div class="filter-group">
+                <label>Status compra</label>
+                <select id="filtro-status" onchange="renderLista()">
+                    <option value="todos">Todos</option>
+                    <option value="comprado">Comprados</option>
+                    <option value="faltou">Não comprados</option>
+                    <option value="nao_marcado">Não marcados</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label>Buscar</label>
+                <input type="text" id="filtro-busca" placeholder="Nome, código, EAN..." oninput="renderLista()">
+            </div>
+
+            <button type="button" class="btn-action btn-green" onclick="carregarDados()">
+                <i class="material-icons" style="font-size:16px;">refresh</i> Atualizar
+            </button>
+            <button type="button" class="btn-action btn-black" onclick="gerarRelatorio()">
+                <i class="material-icons" style="font-size:16px;">print</i> Imprimir Relatório
+            </button>
+            <button type="button" class="btn-action btn-black" onclick="exportarExcel()">
+                <i class="material-icons" style="font-size:16px;">download</i> Exportar Excel
+            </button>
+        </div>
+
+        <div class="progress-wrap" id="progress-wrap" style="display:none;">
+            <div class="progress-inner">
+                <span class="spinner"></span>
+                <span id="progress-text">Carregando vendas...</span>
+                <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+            </div>
+        </div>
+
+        <div class="list-area" id="list-area">
+            <div class="empty-state">
+                <i class="material-icons" style="font-size:48px;color:#ccc;display:block;margin-bottom:12px;">shopping_basket</i>
+                Clique em "Atualizar" para carregar as vendas e montar a lista de compras.
+            </div>
+        </div>
+    </div>
+
+    <script src="/compras/app.js"></script>
+</body>
+</html>
