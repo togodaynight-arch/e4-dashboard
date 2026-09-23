@@ -16,6 +16,12 @@
                 <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="6" fill="#fff"/><path d="M7 14L11 18L21 8" stroke="#d9b759" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <span>E4 Vendas</span>
             </a>
+            <div class="nav-tabs">
+                <button class="nav-link active" data-view="vendas"><i class="material-icons">receipt_long</i> Vendas</button>
+                <button class="nav-link" data-view="relatorio"><i class="material-icons">bar_chart</i> Relatório</button>
+                <button class="nav-link" data-view="recebimentos"><i class="material-icons">account_balance_wallet</i> Recebimentos</button>
+                <button class="nav-link" data-view="config"><i class="material-icons">settings</i> Configurações</button>
+            </div>
             <div class="nav-loading" id="global-spinner">
                 <div class="spinner"></div>
                 <span>Carregando...</span>
@@ -23,7 +29,7 @@
         </div>
     </nav>
 
-    <div class="dashboard-body">
+    <div class="dashboard-body view active" id="view-vendas">
         <div class="filter-bar">
             <form id="form-filters" onsubmit="return false;">
                 <div class="filter-group">
@@ -126,6 +132,115 @@
         </div>
     </div>
 
+    <!-- ===== RELATÓRIO ===== -->
+    <div class="dashboard-body view" id="view-relatorio">
+        <div class="filter-bar">
+            <form onsubmit="return false;">
+                <div class="filter-group">
+                    <label>Loja</label>
+                    <select id="rel-loja"><option value="">Todas as lojas</option></select>
+                </div>
+                <div class="filter-group">
+                    <label>Período</label>
+                    <select id="rel-periodo">
+                        <option value="day">Hoje</option>
+                        <option value="week">Últimos 7 Dias</option>
+                        <option value="mon" selected>Esse Mês</option>
+                        <option value="lastmon">Mês Passado</option>
+                        <option value="all">Todo Período</option>
+                        <option value="custom">Escolher Período</option>
+                    </select>
+                </div>
+                <div class="filter-group custom-dates" id="rel-custom" style="display:none;">
+                    <label>De</label>
+                    <input type="date" id="rel-inicio">
+                    <label>Até</label>
+                    <input type="date" id="rel-fim">
+                </div>
+                <div class="filter-group">
+                    <label>Agrupar produtos por</label>
+                    <select id="rel-agrupar">
+                        <option value="produto">Produto</option>
+                        <option value="categoria">Categoria (ERP)</option>
+                    </select>
+                </div>
+                <button class="btn-filter" onclick="relatorioGerar()"><i class="material-icons">chevron_right</i></button>
+                <button class="btn-filter" onclick="relatorioExportar()" style="background:#38a169;" title="Exportar XLSX"><i class="material-icons">download</i></button>
+            </form>
+        </div>
+        <div class="cards-row metrics" id="rel-cards"></div>
+        <div class="report-grid">
+            <div class="card report-card">
+                <h2><i class="material-icons">credit_card</i> Vendas por forma de pagamento</h2>
+                <div id="rel-pagamentos" class="report-table-wrap"><div class="empty-state">Gere o relatório</div></div>
+            </div>
+            <div class="card report-card">
+                <h2><i class="material-icons">inventory_2</i> Vendas por <span id="rel-produto-titulo">produto</span></h2>
+                <input type="text" id="rel-produto-busca" class="report-search" placeholder="Buscar...">
+                <div id="rel-produtos" class="report-table-wrap"><div class="empty-state">Gere o relatório</div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== RECEBIMENTOS ===== -->
+    <div class="dashboard-body view" id="view-recebimentos">
+        <div class="filter-bar">
+            <form onsubmit="return false;">
+                <div class="filter-group">
+                    <label>Loja</label>
+                    <select id="rec-loja"><option value="">Todas as lojas</option></select>
+                </div>
+                <div class="filter-group">
+                    <label>Vendas dos últimos</label>
+                    <select id="rec-janela">
+                        <option value="30">30 dias</option>
+                        <option value="60" selected>60 dias</option>
+                        <option value="90">90 dias</option>
+                        <option value="180">180 dias</option>
+                    </select>
+                </div>
+                <button class="btn-filter" onclick="recebimentosGerar()"><i class="material-icons">chevron_right</i></button>
+            </form>
+        </div>
+        <div id="rec-alerta"></div>
+        <div class="cards-row metrics" id="rec-cards"></div>
+        <div class="card">
+            <div class="calendar-header">
+                <button class="btn-filter" onclick="recMes(-1)"><i class="material-icons">chevron_left</i></button>
+                <h2 id="rec-mes-titulo">--</h2>
+                <button class="btn-filter" onclick="recMes(1)"><i class="material-icons">chevron_right</i></button>
+            </div>
+            <div class="calendar-grid" id="rec-calendario"></div>
+            <div class="calendar-legend">
+                <span><i class="dot hoje"></i> Hoje</span>
+                <span><i class="dot recebido"></i> Já recebido</span>
+                <span><i class="dot previsto"></i> A receber</span>
+            </div>
+        </div>
+        <div class="card">
+            <h2><i class="material-icons">event</i> Detalhe do dia <span id="rec-dia-titulo"></span></h2>
+            <div id="rec-dia-lista" class="report-table-wrap"><div class="empty-state">Clique em um dia do calendário</div></div>
+        </div>
+    </div>
+
+    <!-- ===== CONFIGURAÇÕES ===== -->
+    <div class="dashboard-body view" id="view-config">
+        <div class="card">
+            <h2><i class="material-icons">settings</i> Prazos de recebimento por forma de pagamento</h2>
+            <p class="config-help">
+                Defina em quantos dias o dinheiro cai na conta: <b>0</b> = na hora (ex.: Pix, dinheiro),
+                <b>1</b> = próximo dia (ex.: débito), <b>30</b> = 30 dias (ex.: crédito).
+                As formas marcadas como <span class="config-badge pendente">não identificada</span>
+                ainda não têm prazo definido — ajuste e salve.
+            </p>
+            <div id="config-tabela" class="report-table-wrap"></div>
+            <div class="config-actions">
+                <button class="btn-filter" onclick="configAdicionar()" style="background:#38a169;"><i class="material-icons">add</i> Adicionar forma</button>
+                <button class="btn-filter" onclick="configResetar()"><i class="material-icons">restart_alt</i> Restaurar padrão</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
         <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
@@ -137,5 +252,6 @@
     </div>
 
     <script src="app.js"></script>
+    <script src="recebimentos.js"></script>
 </body>
 </html>

@@ -570,3 +570,91 @@ body {
     font-size: 11px; font-weight: 700; color: #c53030;
     background: #fed7d7; padding: 1px 8px; border-radius: 10px;
 }
+
+/* ===================== Novas abas (Relatório/Recebimentos/Config) ===================== */
+
+.nav-tabs { display: flex; gap: 8px; flex: 1; justify-content: center; }
+.nav-link.active { background: #fff; color: var(--accent-dark); box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+
+.view { display: none; }
+.view.active { display: block; }
+
+.report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .report-grid { grid-template-columns: 1fr; } }
+
+.report-card h2 { font-size: 15px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.report-card h2 i { color: var(--accent-dark); font-size: 20px; }
+
+.report-table-wrap { max-height: 460px; overflow: auto; }
+.report-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.report-table th {
+    position: sticky; top: 0; background: #fafafa; text-align: left;
+    padding: 10px 10px; border-bottom: 2px solid #eee; font-size: 11px;
+    text-transform: uppercase; letter-spacing: .4px; color: var(--text-secondary);
+}
+.report-table td { padding: 9px 10px; border-bottom: 1px solid #f2f2f2; }
+.report-table tbody tr:hover { background: #fafafa; }
+.report-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.report-table .total-row td { font-weight: 800; border-top: 2px solid #eee; background: #fafafa; }
+
+.report-search {
+    width: 100%; padding: 9px 14px; border: 1px solid #e0e0e0;
+    border-radius: 8px; font-family: inherit; font-size: 13px; margin-bottom: 10px;
+}
+
+.prazo-tag {
+    font-size: 10px; font-weight: 700; color: var(--accent-dark);
+    background: #fdf6e3; padding: 2px 6px; border-radius: 8px; margin-left: 4px;
+}
+
+/* Alertas */
+.alert-banner {
+    display: flex; align-items: center; gap: 12px; background: #fff8e1;
+    border-left: 4px solid #d9b759; border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 16px; font-size: 13px; color: #6b5a1e;
+}
+.alert-banner i { color: #b8963e; }
+.alert-banner a { color: var(--accent-dark); font-weight: 700; cursor: pointer; text-decoration: underline; }
+
+/* Configurações */
+.config-help { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px; }
+.config-table select, .config-table input {
+    padding: 6px 8px; border: 1px solid #e0e0e0; border-radius: 6px;
+    font-family: inherit; font-size: 13px; width: 100%;
+}
+.config-table input.cfg-dias { width: 80px; text-align: right; }
+.config-actions { display: flex; gap: 10px; margin-top: 16px; }
+.config-badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 10px; white-space: nowrap; }
+.config-badge.ok { background: #e6f4ea; color: #1e7e34; }
+.config-badge.pendente { background: #fdecea; color: #c62828; }
+
+/* Calendário */
+.calendar-header { display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 16px; }
+.calendar-header h2 { font-size: 17px; font-weight: 700; min-width: 200px; text-align: center; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-head { text-align: center; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 4px 0; }
+.cal-day {
+    min-height: 76px; border: 1px solid #eee; border-radius: 8px; padding: 6px;
+    cursor: pointer; transition: all .15s; background: #fff;
+}
+.cal-day:hover { border-color: var(--accent); }
+.cal-day.fora { opacity: .35; }
+.cal-day.hoje { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.15); }
+.cal-day.recebido { background: #f1f8f4; border-color: #b7e0c6; }
+.cal-day.previsto { background: #fff8e1; border-color: #ecd9a0; }
+.cal-day.selecionado { outline: 2px solid var(--accent-dark); }
+.cal-num { font-size: 12px; font-weight: 700; color: var(--text-secondary); }
+.cal-val { display: block; font-size: 12px; font-weight: 800; margin-top: 6px; color: #1e7e34; }
+.calendar-legend { display: flex; gap: 20px; margin-top: 14px; font-size: 12px; color: var(--text-secondary); }
+.calendar-legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+.calendar-legend .dot.hoje { background: #2563eb; }
+.calendar-legend .dot.recebido { background: #b7e0c6; }
+.calendar-legend .dot.previsto { background: #ecd9a0; }
+
+@media (max-width: 700px) {
+    .nav-inner { height: auto; flex-wrap: wrap; padding: 8px 12px; gap: 8px; }
+    .nav-tabs { order: 3; width: 100%; justify-content: flex-start; overflow-x: auto; }
+    .nav-link { padding: 7px 12px; font-size: 12px; }
+    .cal-day { min-height: 60px; }
+    .cal-val { font-size: 10px; }
+}

@@ -44,6 +44,36 @@ function apiHeaders() {
     return { 'Content-Type': 'application/json' };
 }
 
+async function fetchSalesData(dataInicio, dataFim, onProgress) {
+    var body = { unidade: null, dataInicial: dataInicio + ' 00:00:00', dataFinal: dataFim + ' 23:59:59' };
+    var headers = apiHeaders();
+    var sales = [];
+
+    var firstRes = await fetch(API_CONFIG.baseUrl + '/vendas/listagem?pagina=1&quantidade=100', { method: 'POST', headers: headers, body: JSON.stringify(body) });
+    if (!firstRes.ok) throw new Error('HTTP ' + firstRes.status);
+    var firstData = await firstRes.json();
+    var totalRecords = (firstData.paginacao && firstData.paginacao.qtdTotalRegistros) || 0;
+    var totalPages = Math.ceil(totalRecords / 100);
+
+    sales = (firstData.registros || []).slice();
+    if (onProgress) onProgress(sales.length, totalRecords);
+
+    var batchSize = 5;
+    for (var i = 2; i <= totalPages; i += batchSize) {
+        var batch = [];
+        for (var j = i; j < Math.min(i + batchSize, totalPages + 1); j++) {
+            batch.push(fetch(API_CONFIG.baseUrl + '/vendas/listagem?pagina=' + j + '&quantidade=100', { method: 'POST', headers: headers, body: JSON.stringify(body) }).then(function(r){return r.json()}).then(function(d){return d.registros||[]}).catch(function(){return[]}));
+        }
+        var results = await Promise.all(batch);
+        results.forEach(function(r) { sales = sales.concat(r); });
+        if (onProgress) onProgress(sales.length, totalRecords);
+    }
+
+    sales.sort(function(a, b) { return new Date(b.dataEfetivacao) - new Date(a.dataEfetivacao); });
+    return sales;
+}
+window.fetchSalesData = fetchSalesData;
+
 async function fetchSales(dataInicio, dataFim) {
     var spinner = document.getElementById('global-spinner');
     var progressContainer = document.getElementById('progress-container');
@@ -57,34 +87,15 @@ async function fetchSales(dataInicio, dataFim) {
     progressFill.style.background = '';
     progressPercent.textContent = '0%';
 
-    var body = { unidade: null, dataInicial: dataInicio + ' 00:00:00', dataFinal: dataFim + ' 23:59:59' };
-    var headers = apiHeaders();
+    function onProgress(loaded, total) {
+        var pct = total ? Math.min(Math.round((loaded / total) * 100), 100) : 100;
+        progressFill.style.width = Math.max(pct, 5) + '%';
+        progressPercent.textContent = pct + '%';
+        progressText.textContent = 'Carregando ' + loaded.toLocaleString('pt-BR') + ' de ' + total.toLocaleString('pt-BR') + '...';
+    }
 
     try {
-        var firstRes = await fetch(API_CONFIG.baseUrl + '/vendas/listagem?pagina=1&quantidade=100', { method: 'POST', headers: headers, body: JSON.stringify(body) });
-        if (!firstRes.ok) throw new Error('HTTP ' + firstRes.status);
-        var firstData = await firstRes.json();
-        var totalRecords = firstData.paginacao.qtdTotalRegistros;
-        var totalPages = Math.ceil(totalRecords / 100);
-
-        allSales = firstData.registros.slice();
-        progressFill.style.width = '5%'; progressPercent.textContent = '5%';
-        progressText.textContent = 'Carregando ' + allSales.length.toLocaleString('pt-BR') + ' de ' + totalRecords.toLocaleString('pt-BR') + '...';
-
-        var batchSize = 5;
-        for (var i = 2; i <= totalPages; i += batchSize) {
-            var batch = [];
-            for (var j = i; j < Math.min(i + batchSize, totalPages + 1); j++) {
-                batch.push(fetch(API_CONFIG.baseUrl + '/vendas/listagem?pagina=' + j + '&quantidade=100', { method: 'POST', headers: headers, body: JSON.stringify(body) }).then(function(r){return r.json()}).then(function(d){return d.registros||[]}).catch(function(){return[]}));
-            }
-            var results = await Promise.all(batch);
-            results.forEach(function(r) { allSales = allSales.concat(r); });
-            var pct = Math.min(Math.round((allSales.length / totalRecords) * 100), 100);
-            progressFill.style.width = pct + '%'; progressPercent.textContent = pct + '%';
-            progressText.textContent = 'Carregando ' + allSales.length.toLocaleString('pt-BR') + ' de ' + totalRecords.toLocaleString('pt-BR') + '...';
-        }
-
-        allSales.sort(function(a, b) { return new Date(b.dataEfetivacao) - new Date(a.dataEfetivacao); });
+        allSales = await fetchSalesData(dataInicio, dataFim, onProgress);
         progressFill.style.width = '100%'; progressPercent.textContent = '100%';
         progressText.textContent = allSales.length.toLocaleString('pt-BR') + ' registros carregados!';
     } catch (error) {
