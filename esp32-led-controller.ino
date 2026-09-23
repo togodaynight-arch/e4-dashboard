@@ -26,7 +26,7 @@ IPAddress dns2(8, 8, 4, 4);
 
 // ========== CONFIGURAÇÃO LED ==========
 // Múltiplas fitas LED. Configure quantas quiser aqui.
-#define LED_TYPE    NEO_GRB   // Ordem de cor para WS2812B. Alternativas: NEO_RGB, NEO_RBG, NEO_BGR, NEO_GRBW
+#define LED_TYPE    NEO_RBG   // Ordem de cor. Alternativas: NEO_RGB, NEO_GRB, NEO_BGR, NEO_GRBW
 #define LED_BRIGHT  50        // Brilho padrão (0-255)
 
 struct FitaConfig {
@@ -35,20 +35,11 @@ struct FitaConfig {
     Adafruit_NeoPixel* strip;
 };
 
-// =============================================================
-// CONFIGURACAO DAS FITAS - ALTERE AQUI OS PINOS E QUANTIDADE DE LEDS
-// =============================================================
-// Formato: {GPIO, quantidade_de_LEDs, ponteiro}
-// Exemplos de GPIOs seguros no ESP32 DevKit: 2, 4, 5, 12, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23, 25, 26, 27, 32, 33
-// Evite: 6, 7, 8, 9, 10, 11 (usados pela flash) e 0, 1, 3 (boot/serial)
-//
-// AJUSTE OS PINOS ABAIXO CONFORME A SUA LIGACAO FISICA:
-// 4 fitas de 10m cada = 600 LEDs por fita (60 LED/m, WS2811 12V)
+// Fitas conectadas ao ESP32
 FitaConfig fitas[] = {
-    {4, 600, nullptr},   // Fita 1 - GPIO 4 - 10 metros
-    {5, 600, nullptr},   // Fita 2 - GPIO 5 - 10 metros
-    {18, 600, nullptr},  // Fita 3 - GPIO 18 - 10 metros
-    {19, 600, nullptr}   // Fita 4 - GPIO 19 - 10 metros
+    {4, 240, nullptr},   // D4 - Fita principal 4m
+    {5, 18,  nullptr},   // D5 - Fita 30cm
+    {2, 18,  nullptr}    // D2 - Fita 30cm
 };
 const int NUM_FITAS = sizeof(fitas) / sizeof(fitas[0]);
 
@@ -60,17 +51,10 @@ String efeitoAtual = "apagado";
 int brilhoAtual = LED_BRIGHT;
 int velocidadeAtual = 50;       // 1-100
 bool ligado = false;
-String ordemCor = "grb";        // grb, rgb, rbg, gbr, brg, bgr
 
 unsigned long lastFrame = 0;
 int framePhase = 0;
 int chasePos = 0;
-
-// Modo teste individual: mantem a fita acesa por X segundos
-bool testandoFita = false;
-int fitaEmTeste = -1;
-String corEmTeste = "";
-unsigned long manterAte = 0;
 
 // Cores pré-definidas
 struct CorPredefinida {
@@ -92,7 +76,7 @@ CorPredefinida coresPredefinidas[] = {
 
 // ========== FUNÇÕES DE COR ==========
 
-// Converte hex #RRGGBB ou #RRGGBBW para RGBW, respeitando ordemCor
+// Converte hex #RRGGBB ou #RRGGBBW para RGBW
 void hexParaRGBW(String hex, uint8_t &r, uint8_t &g, uint8_t &b, uint8_t &w) {
     hex.replace("#", "");
     hex.toUpperCase();
@@ -100,21 +84,9 @@ void hexParaRGBW(String hex, uint8_t &r, uint8_t &g, uint8_t &b, uint8_t &w) {
         r = g = b = w = 0;
         return;
     }
-    uint8_t v0 = (uint8_t)strtol(hex.substring(0, 2).c_str(), NULL, 16);
-    uint8_t v1 = (uint8_t)strtol(hex.substring(2, 4).c_str(), NULL, 16);
-    uint8_t v2 = (uint8_t)strtol(hex.substring(4, 6).c_str(), NULL, 16);
-
-    // Aplica ordem de cor configurada
-    String o = ordemCor;
-    o.toLowerCase();
-    if (o == "rgb") { r = v0; g = v1; b = v2; }
-    else if (o == "rbg") { r = v0; b = v1; g = v2; }
-    else if (o == "grb") { g = v0; r = v1; b = v2; }
-    else if (o == "gbr") { g = v0; b = v1; r = v2; }
-    else if (o == "brg") { b = v0; r = v1; g = v2; }
-    else if (o == "bgr") { b = v0; g = v1; r = v2; }
-    else { g = v0; r = v1; b = v2; } // padrao grb
-
+    r = (uint8_t)strtol(hex.substring(0, 2).c_str(), NULL, 16);
+    g = (uint8_t)strtol(hex.substring(2, 4).c_str(), NULL, 16);
+    b = (uint8_t)strtol(hex.substring(4, 6).c_str(), NULL, 16);
     if (hex.length() >= 8) {
         w = (uint8_t)strtol(hex.substring(6, 8).c_str(), NULL, 16);
     } else {
@@ -193,8 +165,6 @@ void setTodosLEDsCor(String hex) {
 }
 
 void apagarLEDs() {
-    testandoFita = false;
-    fitaEmTeste = -1;
     corAtual = "#000000";
     efeitoAtual = "apagado";
     ligado = false;
@@ -320,18 +290,6 @@ void efeitoOnda() {
 }
 
 void executarEfeito() {
-    // Se estiver em modo teste individual, mantem a fita acesa
-    if (testandoFita) {
-        if (millis() >= manterAte) {
-            testandoFita = false;
-            fitaEmTeste = -1;
-            apagarLEDs();
-        } else {
-            setFitaCor(fitaEmTeste, corEmTeste);
-        }
-        return;
-    }
-
     if (!ligado || efeitoAtual == "apagado") {
         apagarLEDs();
         return;
@@ -358,32 +316,31 @@ void handleComando() {
 
     if (server.hasArg("plain")) {
         String body = server.arg("plain");
-        String bodyLow = body;
-        bodyLow.toLowerCase();
+        body.toLowerCase();
 
         // Comandos simples compatíveis com versão anterior
-        if (bodyLow.indexOf("\"amarelo\"") != -1 || bodyLow.indexOf("amarelo") != -1) {
+        if (body.indexOf("\"amarelo\"") != -1 || body.indexOf("amarelo") != -1) {
             corAtual = "#ffaa00";
             efeitoAtual = "solido";
             ligado = true;
             resposta = "{\"ok\":true,\"cor\":\"" + corAtual + "\",\"efeito\":\"" + efeitoAtual + "\"}";
             code = 200;
         }
-        else if (bodyLow.indexOf("\"verde\"") != -1 || bodyLow.indexOf("verde") != -1) {
+        else if (body.indexOf("\"verde\"") != -1 || body.indexOf("verde") != -1) {
             corAtual = "#00ff00";
             efeitoAtual = "solido";
             ligado = true;
             resposta = "{\"ok\":true,\"cor\":\"" + corAtual + "\",\"efeito\":\"" + efeitoAtual + "\"}";
             code = 200;
         }
-        else if (bodyLow.indexOf("\"apagar\"") != -1 || bodyLow.indexOf("apagar") != -1) {
+        else if (body.indexOf("\"apagar\"") != -1 || body.indexOf("apagar") != -1) {
             apagarLEDs();
             resposta = "{\"ok\":true,\"cor\":\"#000000\",\"efeito\":\"apagado\"}";
             code = 200;
         }
         // JSON avançado
-        else if (bodyLow.indexOf("\"comando\"") != -1 || bodyLow.indexOf("\"cor\"") != -1 || bodyLow.indexOf("\"efeito\"") != -1) {
-            // Extrai cor (mantem case original para hex)
+        else if (body.indexOf("\"comando\"") != -1 || body.indexOf("\"cor\"") != -1 || body.indexOf("\"efeito\"") != -1) {
+            // Extrai cor (busca chave "cor":)
             int idxCor = body.indexOf("\"cor\":");
             if (idxCor != -1) {
                 int idxVal = body.indexOf("\"", idxCor + 6);
@@ -398,111 +355,71 @@ void handleComando() {
                 }
             }
 
-            // Extrai efeito
-            int idxEfeito = bodyLow.indexOf("\"efeito\":");
+            // Extrai efeito (busca chave "efeito":)
+            int idxEfeito = body.indexOf("\"efeito\":");
             if (idxEfeito != -1) {
                 int idxVal = body.indexOf("\"", idxEfeito + 9);
                 if (idxVal != -1) {
                     int idxFim = body.indexOf("\"", idxVal + 1);
                     efeitoAtual = body.substring(idxVal + 1, idxFim);
-                    efeitoAtual.toLowerCase();
                 }
             }
 
-            // Extrai brilho
-            int idxBrilho = bodyLow.indexOf("\"brilho\":");
+            // Extrai brilho (busca chave "brilho":)
+            int idxBrilho = body.indexOf("\"brilho\":");
             if (idxBrilho != -1) {
-                int idxVal = idxBrilho + 9;
-                int idxFim = bodyLow.indexOf(",", idxVal);
-                if (idxFim == -1) idxFim = bodyLow.indexOf("}", idxVal);
+                int idxVal = idxBrilho + 9; // posição logo após o ':'
+                int idxFim = body.indexOf(",", idxVal);
+                if (idxFim == -1) idxFim = body.indexOf("}", idxVal);
                 String val = body.substring(idxVal, idxFim);
                 brilhoAtual = constrain(val.toInt(), 0, 255);
                 setBrightnessTodas(brilhoAtual);
             }
 
-            // Extrai velocidade
-            int idxVel = bodyLow.indexOf("\"velocidade\":");
+            // Extrai velocidade (busca chave "velocidade":)
+            int idxVel = body.indexOf("\"velocidade\":");
             if (idxVel != -1) {
-                int idxVal = idxVel + 13;
-                int idxFim = bodyLow.indexOf(",", idxVal);
-                if (idxFim == -1) idxFim = bodyLow.indexOf("}", idxVal);
+                int idxVal = idxVel + 13; // posição logo após o ':'
+                int idxFim = body.indexOf(",", idxVal);
+                if (idxFim == -1) idxFim = body.indexOf("}", idxVal);
                 String val = body.substring(idxVal, idxFim);
                 velocidadeAtual = constrain(val.toInt(), 1, 100);
             }
 
-            // Extrai índice da fita
+            // Extrai índice da fita (busca chave "fita":)
             int idxFita = -1;
-            int idxFitaKey = bodyLow.indexOf("\"fita\":");
+            int idxFitaKey = body.indexOf("\"fita\":");
             if (idxFitaKey != -1) {
-                int idxVal = idxFitaKey + 7;
-                int idxFim = bodyLow.indexOf(",", idxVal);
-                if (idxFim == -1) idxFim = bodyLow.indexOf("}", idxVal);
+                int idxVal = idxFitaKey + 7; // posição logo após o ':'
+                int idxFim = body.indexOf(",", idxVal);
+                if (idxFim == -1) idxFim = body.indexOf("}", idxVal);
                 String val = body.substring(idxVal, idxFim);
                 idxFita = constrain(val.toInt(), 0, NUM_FITAS - 1);
             }
 
-            // Comando específico
-            int idxCmd = bodyLow.indexOf("\"comando\":");
-            bool temEfeito = bodyLow.indexOf("\"efeito\":") != -1;
-            String cmd = "";
+            // Comando específico (busca chave "comando":)
+            int idxCmd = body.indexOf("\"comando\":");
+            bool temEfeito = body.indexOf("\"efeito\":") != -1;
             if (idxCmd != -1) {
                 int idxVal = body.indexOf("\"", idxCmd + 10);
                 int idxFim = body.indexOf("\"", idxVal + 1);
-                cmd = body.substring(idxVal + 1, idxFim);
-                cmd.toLowerCase();
+                String cmd = body.substring(idxVal + 1, idxFim);
                 if (cmd == "ligar") ligado = true;
                 else if (cmd == "desligar") { apagarLEDs(); }
                 else if (cmd == "cor") {
                     ligado = true;
                     if (!temEfeito) efeitoAtual = "solido";
                 }
-                else if (cmd == "config") {
-                    // Apenas confirma config (os valores ja foram aplicados acima)
-                    ligado = true;
-                    if (!temEfeito && corAtual != "#000000") efeitoAtual = "solido";
-                }
-            }
-
-            // Extrai ordem de cor
-            int idxOrdem = bodyLow.indexOf("\"ordem_cor\":");
-            if (idxOrdem != -1) {
-                int idxVal = body.indexOf("\"", idxOrdem + 12);
-                if (idxVal != -1) {
-                    int idxFim = body.indexOf("\"", idxVal + 1);
-                    String novaOrdem = body.substring(idxVal + 1, idxFim);
-                    novaOrdem.toLowerCase();
-                    if (novaOrdem == "grb" || novaOrdem == "rgb" || novaOrdem == "rbg" ||
-                        novaOrdem == "gbr" || novaOrdem == "brg" || novaOrdem == "bgr") {
-                        ordemCor = novaOrdem;
-                        Serial.println("[CONFIG] Ordem de cor alterada para: " + ordemCor);
-                    }
-                }
             }
 
             if (idxFita >= 0) {
                 // Teste de fita individual: aplica imediatamente na fita escolhida
-                if (corAtual == "#000000" || bodyLow.indexOf("\"apagar\"") != -1) {
-                    testandoFita = false;
+                if (corAtual == "#000000" || body.indexOf("\"apagar\"") != -1) {
                     apagarFita(idxFita);
                     resposta = "{\"ok\":true,\"fita\":" + String(idxFita) + ",\"acao\":\"apagar\"}";
                 } else {
                     setFitaCor(idxFita, corAtual);
-                    // Mantem a fita acesa por 10 segundos (ou duracao especificada)
-                    int duracaoTeste = 10000;
-                    int idxDur = bodyLow.indexOf("\"duracao\":");
-                    if (idxDur == -1) idxDur = bodyLow.indexOf("\"tempo\":");
-                    if (idxDur != -1) {
-                        int idxVal = bodyLow.indexOf(":", idxDur) + 1;
-                        int idxFim = bodyLow.indexOf(",", idxVal);
-                        if (idxFim == -1) idxFim = bodyLow.indexOf("}", idxVal);
-                        String val = body.substring(idxVal, idxFim);
-                        duracaoTeste = constrain(val.toInt() * 1000, 1000, 60000);
-                    }
-                    testandoFita = true;
-                    fitaEmTeste = idxFita;
-                    corEmTeste = corAtual;
-                    manterAte = millis() + duracaoTeste;
-                    resposta = "{\"ok\":true,\"fita\":" + String(idxFita) + ",\"cor\":\"" + corAtual + "\",\"brilho\":" + String(brilhoAtual) + ",\"duracao\":\"" + String(duracaoTeste/1000) + "s\"}";
+                    resposta = "{\"ok\":true,\"fita\":" + String(idxFita) + ",\"cor\":\"" + corAtual + "\",\"brilho\":" + String(brilhoAtual) + "}";
                 }
                 code = 200;
             } else {
@@ -539,7 +456,6 @@ void handleStatus() {
     json += "\"brilho\":" + String(brilhoAtual) + ",";
     json += "\"velocidade\":" + String(velocidadeAtual) + ",";
     json += "\"ligado\":" + String(ligado ? "true" : "false") + ",";
-    json += "\"ordem_cor\":\"" + ordemCor + "\",";
     json += "\"fitas\":[";
     for (int f = 0; f < NUM_FITAS; f++) {
         json += "{\"pino\":" + String(fitas[f].pino) + ",\"leds\":" + String(fitas[f].qtdLeds) + "}";
@@ -582,88 +498,11 @@ void handleEfeitos() {
     server.send(200, "application/json", json);
 }
 
-// Testa uma fita especifica: pisca na cor escolhida e apaga
-void handleTeste() {
-    String resposta = "{\"ok\":false,\"erro\":\"requisicao invalida\"}";
-    int code = 400;
-
-    if (server.hasArg("plain")) {
-        String body = server.arg("plain");
-        String bodyLow = body;
-        bodyLow.toLowerCase();
-
-        // Extrai fita
-        int idxFita = 0;
-        int idxFitaKey = bodyLow.indexOf("\"fita\":");
-        if (idxFitaKey != -1) {
-            int idxVal = idxFitaKey + 7;
-            int idxFim = bodyLow.indexOf(",", idxVal);
-            if (idxFim == -1) idxFim = bodyLow.indexOf("}", idxVal);
-            String val = body.substring(idxVal, idxFim);
-            idxFita = constrain(val.toInt(), 0, NUM_FITAS - 1);
-        }
-
-        // Extrai cor (mantem case original)
-        String hex = "#ffaa00";
-        int idxCor = body.indexOf("\"cor\":");
-        if (idxCor != -1) {
-            int idxVal = body.indexOf("\"", idxCor + 6);
-            if (idxVal != -1) {
-                int idxFim = body.indexOf("\"", idxVal + 1);
-                hex = body.substring(idxVal + 1, idxFim);
-            }
-        }
-
-        int duracao = 2000;
-        int idxDur = bodyLow.indexOf("\"duracao\":");
-        if (idxDur == -1) idxDur = bodyLow.indexOf("\"tempo\":");
-        if (idxDur != -1) {
-            int idxVal = bodyLow.indexOf(":", idxDur) + 1;
-            int idxFim = bodyLow.indexOf(",", idxVal);
-            if (idxFim == -1) idxFim = bodyLow.indexOf("}", idxVal);
-            String val = body.substring(idxVal, idxFim);
-            duracao = constrain(val.toInt(), 100, 10000);
-        }
-
-        Serial.println("[TESTE] Fita " + String(idxFita) + " cor " + hex + " por " + String(duracao) + "ms");
-
-        // Pisca a fita escolhida 2x
-        uint8_t r, g, b, w;
-        hexParaRGBW(hex, r, g, b, w);
-        for (int p = 0; p < 2; p++) {
-            setFitaCor(idxFita, hex);
-            delay(300);
-            apagarFita(idxFita);
-            delay(200);
-        }
-        setFitaCor(idxFita, hex);
-
-        resposta = "{\"ok\":true,\"fita\":" + String(idxFita) + ",\"cor\":\"" + hex + "\",\"duracao\":" + String(duracao) + "}";
-        code = 200;
-    }
-
-    server.sendHeader("Access-Control-Allow-Origin", "*");
-    server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
-    server.send(code, "application/json", resposta);
-}
-
 void handleOptions() {
     server.sendHeader("Access-Control-Allow-Origin", "*");
     server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
     server.send(204);
-}
-
-// Reinicia o ESP32 remotamente
-void handleReboot() {
-    server.sendHeader("Access-Control-Allow-Origin", "*");
-    server.sendHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
-    server.send(200, "application/json", "{\"ok\":true,\"msg\":\"reiniciando\"}");
-    Serial.println("[REBOOT] Reiniciando ESP32 por comando remoto...");
-    delay(500);
-    ESP.restart();
 }
 
 // ========== SETUP ==========
@@ -679,25 +518,15 @@ void setup() {
     }
     apagarLEDs();
 
-    // Teste sequencial: pisca cada fita individualmente na cor vermelha
-    // Isso ajuda a identificar se cada fita está ligada no pino correto
-    Serial.println("[TESTE] Iniciando teste sequencial das fitas...");
+    // Teste rápido: pisca 3 LEDs verdes em cada fita
     for (int f = 0; f < NUM_FITAS; f++) {
-        Serial.print("[TESTE] Fita ");
-        Serial.print(f);
-        Serial.print(" no GPIO ");
-        Serial.println(fitas[f].pino);
-
-        for (int i = 0; i < fitas[f].qtdLeds; i++) {
-            fitas[f].strip->setPixelColor(i, fitas[f].strip->Color(50, 0, 0));
+        for (int i = 0; i < 3 && i < fitas[f].qtdLeds; i++) {
+            fitas[f].strip->setPixelColor(i, fitas[0].strip->Color(0, 50, 0));
         }
-        fitas[f].strip->show();
-        delay(400);
-        fitas[f].strip->clear();
-        fitas[f].strip->show();
-        delay(200);
     }
-    Serial.println("[TESTE] Teste sequencial concluido");
+    showTodas();
+    delay(500);
+    apagarLEDs();
 
     // Configura IP fixo
     if (!WiFi.config(local_IP, gateway, subnet, dns1, dns2)) {
@@ -746,31 +575,14 @@ void setup() {
     server.on("/cores", HTTP_OPTIONS, handleOptions);
     server.on("/efeitos", handleEfeitos);
     server.on("/efeitos", HTTP_OPTIONS, handleOptions);
-    server.on("/teste", HTTP_POST, handleTeste);
-    server.on("/teste", HTTP_OPTIONS, handleOptions);
-    server.on("/reboot", HTTP_GET, handleReboot);
-    server.on("/reboot", HTTP_POST, handleReboot);
-    server.on("/reboot", HTTP_OPTIONS, handleOptions);
     server.begin();
     Serial.println("Servidor HTTP iniciado na porta 80");
 }
 
 // ========== LOOP ==========
 
-unsigned long lastWifiCheck = 0;
-
 void loop() {
     server.handleClient();
     executarEfeito();
-
-    // Reconexao WiFi a cada 10 segundos se desconectado
-    if (millis() - lastWifiCheck > 10000) {
-        lastWifiCheck = millis();
-        if (WiFi.status() != WL_CONNECTED) {
-            Serial.println("[WiFi] Reconectando...");
-            WiFi.reconnect();
-        }
-    }
-
     delay(1);
 }
