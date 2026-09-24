@@ -137,7 +137,7 @@
 
             <div class="split-col col-entradas">
                 <div class="split-col-header col-entradas-header">
-                    <h2><i class="material-icons" style="font-size:20px;vertical-align:middle;margin-right:6px;">login</i> Entradas</h2>
+                    <h2><i class="material-icons" style="font-size:20px;vertical-align:middle;margin-right:6px;">login</i> Entradas (Planilha)</h2>
                 </div>
                 <div class="upload-area" id="upload-area" onclick="document.getElementById('excel-file').click()">
                     <i class="material-icons" style="font-size:36px;color:#32bcad;">cloud_upload</i>
@@ -148,10 +148,10 @@
                     <input type="file" id="excel-file" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelUpload(event)">
                 </div>
                 <div style="text-align:center;padding:6px 12px;background:#f0fff4;border-bottom:1px solid #c6f6d5;">
-                    <button type="button" class="btn-action btn-green" onclick="toggleEntradasAuto()" id="btn-entradas-auto" style="font-size:12px;padding:6px 12px;">
-                        <i class="material-icons" style="font-size:14px;">autorenew</i> Automático: ON
+                    <button type="button" class="btn-action btn-green" onclick="loadEntradasPorta()" id="btn-entradas-api" style="font-size:12px;padding:6px 12px;">
+                        <i class="material-icons" style="font-size:14px;">cloud_download</i> Carregar da API
                     </button>
-                    <span style="font-size:10px;color:var(--text-muted);margin-left:8px;" id="entradas-auto-hint">Entradas vêm dos logs de porta (monitor)</span>
+                    <span style="font-size:10px;color:var(--text-muted);margin-left:8px;">Logs de Porta de Acesso</span>
                 </div>
                 <div class="split-col-count" id="entradas-count">0 entradas</div>
                 <div class="split-col-scroll" id="entradas-list">

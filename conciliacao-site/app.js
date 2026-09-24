@@ -11,7 +11,6 @@ var VENDAS_PAGE_SIZE = 30;
 var entradasPage = 1;
 var ENTRADAS_PAGE_SIZE = 30;
 var ordemPorHora = false;
-var entradaAuto = true;
 
 function formatarMoeda(v) {
     return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -270,25 +269,22 @@ function renderEntradas() {
     var colMap = identifyColumns(excelColumns);
     var el = document.getElementById('entradas-list');
 
-    var items = getEntradasFiltered();
-
-    if (entradaData.length === 0 || items.length === 0) {
-        var msg = entradaData.length === 0 ? 'Importe uma planilha ou ative o modo automático para ver as entradas.' : 'Nenhuma entrada para os filtros selecionados.';
-        el.innerHTML = '<div class="empty-state"><i class="material-icons" style="font-size:48px;color:#ccc;display:block;margin-bottom:12px;">login</i>' + msg + '</div>';
+    if (entradaData.length === 0) {
+        el.innerHTML = '<div class="empty-state"><i class="material-icons" style="font-size:48px;color:#ccc;display:block;margin-bottom:12px;">login</i>Importe uma planilha para ver as entradas.</div>';
         document.getElementById('entradas-pagination-row').style.display = 'none';
-        document.getElementById('entradas-count').textContent = items.length.toLocaleString('pt-BR') + ' entradas';
+        document.getElementById('entradas-count').textContent = '0 entradas';
         return;
     }
 
     var start = (entradasPage - 1) * ENTRADAS_PAGE_SIZE;
     if (ordemPorHora) {
-        items = items.slice().sort(function(a, b) {
+        entradaData.sort(function(a, b) {
             var da = parseDateFlex(colMap.date ? a[colMap.date] : null);
             var db = parseDateFlex(colMap.date ? b[colMap.date] : null);
             return (da && db) ? (da - db) : 0;
         });
     }
-    var pageData = items.slice(start, start + ENTRADAS_PAGE_SIZE);
+    var pageData = entradaData.slice(start, start + ENTRADAS_PAGE_SIZE);
 
     var html = '';
     var lastHour = null;
@@ -328,11 +324,11 @@ function renderEntradas() {
     });
     el.innerHTML = html;
 
-    document.getElementById('entradas-count').textContent = items.length.toLocaleString('pt-BR') + ' entradas' + (excelFileName ? ' | ' + excelFileName : '');
+    document.getElementById('entradas-count').textContent = entradaData.length.toLocaleString('pt-BR') + ' entradas' + (excelFileName ? ' | ' + excelFileName : '');
 
-    var totalPages = Math.ceil(items.length / ENTRADAS_PAGE_SIZE);
+    var totalPages = Math.ceil(entradaData.length / ENTRADAS_PAGE_SIZE);
     document.getElementById('entradas-pagination-row').style.display = totalPages > 1 ? 'flex' : 'none';
-    document.getElementById('entradas-info').textContent = 'Mostrando '+(start+1)+'-'+Math.min(start+ENTRADAS_PAGE_SIZE, items.length)+' de '+items.length.toLocaleString('pt-BR');
+    document.getElementById('entradas-info').textContent = 'Mostrando '+(start+1)+'-'+Math.min(start+ENTRADAS_PAGE_SIZE, entradaData.length)+' de '+entradaData.length.toLocaleString('pt-BR');
 
     var pagination = document.getElementById('entradas-pagination');
     var btns = '<button '+(entradasPage===1?'disabled':'')+' onclick="mudarPaginaEntradas('+(entradasPage-1)+')">◀</button>';
@@ -366,9 +362,7 @@ function handleExcelUpload(event) {
             entradaData = jsonData;
             excelFileName = file.name;
             excelColumns = Object.keys(jsonData[0]);
-            entradaAuto = false;
             document.getElementById('upload-label').textContent = file.name + ' (' + jsonData.length.toLocaleString('pt-BR') + ' linhas)';
-            atualizarBotaoAuto();
             entradasPage = 1;
             populateLojaFilter();
             rebuild();
@@ -464,70 +458,53 @@ function toggleOrdemHora() {
     rebuild();
 }
 
-// ========== ENTRADAS AUTOMATICAS (LOGS DE PORTA) ==========
-function syncEntradasAuto() {
-    var porta = (monitorAllData || []).filter(function(o) {
-        return o.codigo === '41' || o.codigo === '42';
-    });
-    if (porta.length === 0) return;
-    entradaData = porta.map(function(o) {
-        return {
-            'Data': o.data || '',
-            'Nome': o.cliente || 'Visitante',
-            'Loja': o.unidade || '',
-            'CPF': o.cpf || '',
-            'Status': o.situacao || '',
-            'Detalhe': o.transacao || ''
-        };
-    });
-    excelFileName = 'Automático - ' + porta.length + ' entradas de porta';
-    excelColumns = ['Data', 'Nome', 'Loja', 'CPF', 'Status', 'Detalhe'];
-    document.getElementById('upload-label').textContent = excelFileName;
-    entradasPage = 1;
-}
+// ========== ENTRADAS PORTA DE ACESSO ==========
+function loadEntradasPorta() {
+    var btn = document.getElementById('btn-entradas-api');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="material-icons" style="font-size:14px;">hourglass_empty</i> Carregando...';
 
-function atualizarBotaoAuto() {
-    var btn = document.getElementById('btn-entradas-auto');
-    var hint = document.getElementById('entradas-auto-hint');
-    if (!btn) return;
-    if (entradaAuto) {
-        btn.innerHTML = '<i class="material-icons" style="font-size:14px;">autorenew</i> Automático: ON';
-        btn.classList.remove('btn-black');
-        btn.classList.add('btn-green');
-        if (hint) hint.textContent = 'Entradas vêm dos logs de porta (monitor)';
-    } else {
-        btn.innerHTML = '<i class="material-icons" style="font-size:14px;">cloud_upload</i> Automático: OFF';
-        btn.classList.remove('btn-green');
-        btn.classList.add('btn-black');
-        if (hint) hint.textContent = 'Modo planilha: importe um arquivo para ver as entradas';
-    }
-}
-
-function toggleEntradasAuto() {
-    entradaAuto = !entradaAuto;
-    if (entradaAuto) {
-        syncEntradasAuto();
-        populateLojaFilter();
-    }
-    atualizarBotaoAuto();
-    rebuild();
-}
-
-function getEntradasFiltered() {
-    var lojaFilter = document.getElementById('filtro-loja').value;
-    var busca = document.getElementById('filtro-busca').value.toLowerCase();
-    var colMap = identifyColumns(excelColumns);
-    return entradaData.filter(function(row) {
-        if (lojaFilter) {
-            var lojaVal = colMap.loja ? String(row[colMap.loja] || '') : String(row['Loja'] || row['Unidade'] || '');
-            if (lojaVal !== lojaFilter) return false;
-        }
-        if (busca) {
-            var nameVal = colMap.name ? String(row[colMap.name] || '') : String(row['Nome'] || row['Cliente'] || '');
-            if (nameVal.toLowerCase().indexOf(busca) === -1) return false;
-        }
-        return true;
-    });
+    fetch('/entradas-porta')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.ok || data.total === 0) {
+                alert('Nenhuma entrada encontrada hoje.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="material-icons" style="font-size:14px;">cloud_download</i> Carregar da API';
+                return;
+            }
+            entradaData = data.entradas.map(function(o) {
+                return {
+                    'Data': o.data || '',
+                    'Nome': o.cliente || '',
+                    'Loja': o.loja || '',
+                    'CPF': o.cpf || '',
+                    'Cartao': o.cartao || '',
+                    'Telefone': o.telefone || '',
+                    'Email': o.email || '',
+                    'Apto': o.apartamento || '',
+                    'Obs': o.obs || '',
+                    'Trava': o.trava || '',
+                    'Status': o.status || ''
+                };
+            });
+            excelFileName = 'API - ' + data.total + ' entradas';
+            excelColumns = ['Data', 'Nome', 'Loja', 'CPF', 'Cartao', 'Telefone', 'Email', 'Apto', 'Obs', 'Trava', 'Status'];
+            document.getElementById('upload-label').textContent = excelFileName;
+            entradasPage = 1;
+            populateLojaFilter();
+            rebuild();
+            btn.disabled = false;
+            btn.innerHTML = '<i class="material-icons" style="font-size:14px;">check_circle</i> ' + data.total + ' entradas';
+            setTimeout(function() {
+                btn.innerHTML = '<i class="material-icons" style="font-size:14px;">cloud_download</i> Carregar da API';
+            }, 3000);
+        })
+        .catch(function() {
+            alert('Erro ao carregar entradas da API.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="material-icons" style="font-size:14px;">cloud_download</i> Carregar da API';
+        });
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1022,11 +999,6 @@ function pollOcorrencias() {
             document.getElementById('monitor-last').textContent = 'Última atualização: ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
             document.getElementById('monitor-count').textContent = data.total + ' ocorrências hoje';
             monitorAllData = data.ocorrencias;
-            if (entradaAuto) {
-                syncEntradasAuto();
-                populateLojaFilter();
-                renderEntradas();
-            }
             renderOcorrencias(monitorAllData);
         })
         .catch(function() {
