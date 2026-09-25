@@ -125,8 +125,15 @@ input[type="range"]{padding:0;accent-color:#d9b759;cursor:pointer}
         <label>Título da promoção: <span class="range-val" id="fs-promo-titulo-val">88px</span></label>
         <input type="range" id="cfg-fs-promo-titulo" min="30" max="200" value="88" oninput="setFont('fsPromoTitulo','fs-promo-titulo-val',this.value)">
 
-        <label>Descrição da promoção: <span class="range-val" id="fs-promo-desc-val">32px</span></label>
-        <input type="range" id="cfg-fs-promo-desc" min="14" max="110" value="32" oninput="setFont('fsPromoDesc','fs-promo-desc-val',this.value)">
+         <label>Descrição da promoção: <span class="range-val" id="fs-promo-desc-val">32px</span></label>
+         <input type="range" id="cfg-fs-promo-desc" min="14" max="110" value="32" oninput="setFont('fsPromoDesc','fs-promo-desc-val',this.value)">
+    </div>
+
+    <div class="card">
+        <h2>💡 LED atrás da TV (ESP32/WLED)</h2>
+        <label>IP do ESP32 (WLED)</label>
+        <input type="text" id="espIp" placeholder="Ex: 192.168.0.200">
+        <div class="hint">O ESP32 precisa estar com o WLED instalado e na mesma rede da TV. Aí, em cada tela abaixo, você liga a opção "Acender LED" e escolhe a cor.</div>
     </div>
 
     <div class="card">
@@ -152,6 +159,7 @@ var SENHA = 'togo2026';
 var slides = [];
 var uploadTarget = null;
 var logo = '';
+var espIp = '';
 
 var tela = { rotacao:0, zoom:100, fsNome:100, fsSaudacao:72, fsLogo:24, fsIdleLogo:60, fsPromoTitulo:88, fsPromoDesc:32 };
 
@@ -176,11 +184,11 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function msg(t, ok){var m=document.getElementById('msg');m.textContent=t;m.className='msg '+(ok?'ok':'erro');}
 
 function novoSlide(tipo){
-    if(tipo==='promo') return {tipo:'promo', titulo:'', preco:'', descricao:'', cor:'#d9b759', fonte:100, imagem:'', tempo:8};
-    if(tipo==='imagem') return {tipo:'imagem', url:'', ajuste:'contain', tempo:8};
-    if(tipo==='video') return {tipo:'video', url:'', tempo:30};
-    if(tipo==='clima') return {tipo:'clima', tempo:8};
-    return {tipo:'promo', titulo:'', preco:'', descricao:'', cor:'#d9b759', fonte:100, imagem:'', tempo:8};
+    if(tipo==='promo') return {tipo:'promo', titulo:'', preco:'', descricao:'', cor:'#d9b759', fonte:100, imagem:'', led:false, ledCor:'#ffaa00', tempo:8};
+    if(tipo==='imagem') return {tipo:'imagem', url:'', ajuste:'contain', led:false, ledCor:'#ffaa00', tempo:8};
+    if(tipo==='video') return {tipo:'video', url:'', led:false, ledCor:'#ffaa00', tempo:30};
+    if(tipo==='clima') return {tipo:'clima', led:false, ledCor:'#ffaa00', tempo:8};
+    return {tipo:'promo', titulo:'', preco:'', descricao:'', cor:'#d9b759', fonte:100, imagem:'', led:false, ledCor:'#ffaa00', tempo:8};
 }
 
 function addSlide(tipo){ slides.push(novoSlide(tipo)); render(); }
@@ -292,6 +300,13 @@ function tempoHTML(s,i){
         '<input type="number" data-field="tempo" min="2" max="600" value="'+(s.tempo||8)+'">';
 }
 
+function ledHTML(s,i){
+    return '<label>💡 LED atrás da TV</label>' +
+        '<div class="row2"><label style="font-size:11px">Acender nesta tela</label>' +
+        '<input type="checkbox" data-field="led" style="width:22px;height:22px;margin:0"' + (s.led ? ' checked' : '') + '></div>' +
+        '<div class="row2"><label>Cor do LED</label><input type="color" data-field="ledCor" value="'+(s.ledCor||'#ffaa00')+'"></div>';
+}
+
 function promoBody(s,i){
     return '<div class="mini-promo" data-mini="'+i+'"></div>' +
         '<label>Nome do produto</label>' +
@@ -346,7 +361,7 @@ function cardHTML(s,i){
             '<button class="mini" onclick="mover('+i+',-1)">↑</button>' +
             '<button class="mini" onclick="mover('+i+',1)">↓</button>' +
             '<button class="mini danger" onclick="remover('+i+')">✕</button>' +
-        '</div>' + body + '</div>';
+        '</div>' + body + ledHTML(s,i) + '</div>';
 }
 
 function render(){
@@ -397,6 +412,8 @@ function aoEditar(e){
     else if(f==='url') slides[i].url = e.target.value;
     else if(f==='ajuste') slides[i].ajuste = e.target.value;
     else if(f==='tempo') slides[i].tempo = parseInt(e.target.value)||0;
+    else if(f==='led') slides[i].led = e.target.checked;
+    else if(f==='ledCor') slides[i].ledCor = e.target.value;
     if(slides[i].tipo==='promo') atualizarMini(card, i);
 }
 
@@ -438,6 +455,8 @@ function carregar(){
         logo = c.logo||'';
         document.getElementById('logo-input').value = logo;
         atualizarLogoPreview();
+        espIp = c.espIp||'';
+        document.getElementById('espIp').value = espIp;
         if(c.tela){ tela = Object.assign({}, tela, c.tela); }
         carregarControlesTela();
         slides = c.slides||[];
@@ -450,7 +469,7 @@ function salvar(){
     if(document.getElementById('senha').value!==SENHA){msg('Senha incorreta.',false);return;}
 
     var limpo = slides.map(function(s){
-        var o = { tipo:s.tipo, tempo: parseInt(s.tempo)||8 };
+        var o = { tipo:s.tipo, tempo: parseInt(s.tempo)||8, led: !!s.led, ledCor: s.ledCor||'#ffaa00' };
         if(s.tipo==='promo'){ o.titulo=(s.titulo||'').trim(); o.preco=(s.preco||'').trim(); o.descricao=(s.descricao||'').trim(); o.cor=s.cor||'#d9b759'; o.fonte=parseInt(s.fonte)||100; o.imagem=(s.imagem||'').trim(); }
         if(s.tipo==='imagem'){ o.url=(s.url||'').trim(); o.ajuste=s.ajuste==='cover'?'cover':'contain'; }
         if(s.tipo==='video'){ o.url=(s.url||'').trim(); }
@@ -463,6 +482,7 @@ function salvar(){
         cidade: document.getElementById('cidade').value.trim(),
         tempoBemvindo: parseInt(document.getElementById('tempoBemvindo').value)||15,
         logo: (logo||'').trim(),
+        espIp: (document.getElementById('espIp').value||'').trim(),
         tela: tela,
         slides: limpo
     };

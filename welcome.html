@@ -395,9 +395,35 @@ function esconderTudo(){
     pararVideo();
 }
 
+// ========== LED (ESP32/WLED) ==========
+function hexParaRgb(hex){
+    var h = String(hex || '#ffaa00').replace('#','');
+    if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    return [parseInt(h.substr(0,2),16), parseInt(h.substr(2,2),16), parseInt(h.substr(4,2),16)];
+}
+
+function enviarLED(ligar, corHex){
+    if (!conteudo.espIp) return;
+    var body;
+    if (!ligar) {
+        body = { on: false };
+    } else {
+        var rgb = hexParaRgb(corHex);
+        body = { on: true, bri: 128, seg: [{ col: [[rgb[0], rgb[1], rgb[2]]] }] };
+    }
+    try {
+        fetch('http://' + conteudo.espIp + '/json/state', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        }).catch(function(){});
+    } catch(e) {}
+}
+
 function mostrarIdle(){
     modo = 'idle';
     esconderTudo();
+    enviarLED(false);
     document.getElementById('idle').classList.remove('hidden');
 }
 
@@ -409,6 +435,8 @@ function mostrarSlide(s){
     else if (s.tipo === 'clima') mostrarClima();
     else if (s.tipo === 'video') mostrarVideo(s);
     else mostrarIdle();
+    // LED atrás da TV: acende se a tela tiver a opção ligada
+    enviarLED(!!s.led, s.ledCor);
 }
 
 function mostrarPromo(p){
@@ -512,6 +540,7 @@ function mostrarBemVindo(nome){
     modo = 'welcome';
     if (carouselTimer) clearTimeout(carouselTimer);
     esconderTudo();
+    enviarLED(true, '#d9b759'); // luz dourada ao receber o cliente
 
     document.getElementById('customer-name-display').textContent = formatarNome(nome);
     document.getElementById('customer-info-display').textContent = 'Loja ' + conteudo.loja;
@@ -546,6 +575,28 @@ function simularEntrada(){
     fecharPanel();
 }
 
+// ========== ENTRADA DE CLIENTE (via ponte Control iD -> Firebase) ==========
+var FIREBASE_ENTRADA = 'https://loja-bemvindo-default-rtdb.firebaseio.com/entrada.json';
+var ultimaEntradaId = null;
+
+function verificarEntrada(){
+    fetch(FIREBASE_ENTRADA)
+    .then(function(r){ return r.json(); })
+    .then(function(e){
+        if (!e || !e.nome) return;
+        document.getElementById('sb-entrada').textContent = e.nome || '---';
+        if (e.id !== ultimaEntradaId) {
+            ultimaEntradaId = e.id;
+            // só mostra se a entrada foi agora (últimos 20 segundos)
+            var agora = Date.now() / 1000;
+            if ((agora - e.time) < 20 && modo !== 'welcome') {
+                mostrarBemVindo(e.nome);
+            }
+        }
+    })
+    .catch(function(){});
+}
+
 // ========== INICIALIZAÇÃO ==========
 carregarControlesTela();
 carregarConteudo();
@@ -554,6 +605,7 @@ iniciarCarrossel();
 
 setInterval(carregarConteudo, 10000);
 setInterval(carregarClima, 15 * 60 * 1000);
+setInterval(verificarEntrada, 3000);
 </script>
 </body>
 </html>
