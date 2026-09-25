@@ -131,6 +131,8 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 
     <div class="note">Conteúdo (telas, vídeos, tempo, imagens) é editado pelo <b>painel de mídia</b> no celular. Aqui você ajusta só tamanho e posição da tela.</div>
 
+    <button onclick="abrirConfiguracoes()" style="width:100%;padding:11px;margin:4px 0 12px;border:none;border-radius:6px;background:#d9b759;color:#000;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">🛠️ Abrir configurações completas (tecla A)</button>
+
     <details open>
     <summary>🖥️ Tela</summary>
     <label>Girar tela</label>
@@ -181,7 +183,7 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
     <button class="btn-fechar" onclick="fecharPanel()">Fechar Painel</button>
 </div>
 
-<div class="hint">Pressione <b>C</b> para abrir os ajustes</div>
+<div class="hint">Pressione <b>C</b> (ajustes da tela) · <b>A</b> (configurações completas)</div>
 
 <script>
 var FIREBASE_URL = 'https://loja-bemvindo-default-rtdb.firebaseio.com/config.json';
@@ -254,10 +256,12 @@ function salvarTela(){
 
 function abrirPanel(){ document.getElementById('panel').classList.add('open'); }
 function fecharPanel(){ document.getElementById('panel').classList.remove('open'); }
+function abrirConfiguracoes(){ location.href = 'admin.html'; }
 document.addEventListener('keydown', function(e){
     var tag = (e.target.tagName || '').toLowerCase();
     if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) return;
     if (e.key === 'c' || e.key === 'C') document.getElementById('panel').classList.toggle('open');
+    if (e.key === 'a' || e.key === 'A') { abrirConfiguracoes(); return; }
 });
 
 // ========== CONTEÚDO ==========
