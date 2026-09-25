@@ -40,6 +40,7 @@ function postCID(path, body, form) {
             });
         });
         req.on('error', reject);
+        req.setTimeout(5000, function() { req.destroy(new Error('timeout')); });
         req.write(data);
         req.end();
     });
@@ -56,6 +57,7 @@ function putFirebase(path, data) {
             res.on('end', resolve);
         });
         req.on('error', reject);
+        req.setTimeout(8000, function() { req.destroy(new Error('timeout')); });
         req.write(body);
         req.end();
     });
