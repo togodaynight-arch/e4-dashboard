@@ -6,7 +6,8 @@ const path = require('path');
 const PORT = 3000;
 const API_BASE = 'https://portal.e4sistemas.com.br';
 const CLIENT_ID = '215';
-const TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjbGllbnRlIjoiMjE1IiwiZGF0YSI6IjIwMjYtMDQtMjkgMTU6NDU6MTQiLCJkb2N1bWVudG8iOiJ2cDAwMDA3MzUzLXAwMDEiLCJlbmRlcmVjbyI6InJ1YSB0cmFqYW5vIHJlaXMiLCJjb250YXRvIjoiY2xpZW50ZSIsInRlbGVmb25lIjoiMTE5OTk5OTkiLCJpc3MiOiJlNHNpc3RlbWFzLmNvbS5iciIsInN1YiI6IkF1dGVudGljYVx1MDBlN1x1MDBlM28iLCJhdWQiOiJUZXJjZWlyb3MgdmlhIEFQSSJ9.VKTPNRxHJauxQnSc/ur7cEpc9P6XO/lLYDacj8dj450=';
+const E4_PRODUTO = process.env.E4_PRODUTO || '';
+const TOKEN = process.env.E4_TOKEN || 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjbGllbnRlIjoiMjE1IiwiZGF0YSI6IjIwMjYtMDktMjIgMTY6MzU6MjEiLCJkb2N1bWVudG8iOiJ0byBnbyIsImVuZGVyZWNvIjoiYSIsImNvbnRhdG8iOiJhIiwidGVsZWZvbmUiOiIyMTUiLCJpc3MiOiJlNHNpc3RlbWFzLmNvbS5iciIsInN1YiI6IkF1dGVudGljYVx1MDBlN1x1MDBlM28iLCJhdWQiOiJUZXJjZWlyb3MgdmlhIEFQSSJ9.b6xBNXFM3RdOkCZefiLrtX6zQ1N2Ibt9KZyjDrgIbKA=';
 
 const MIME_TYPES = {
     '.html': 'text/html',
@@ -65,13 +66,16 @@ function proxyRequest(req, res) {
     req.on('end', () => {
         const fullUrl = `${API_BASE}${req.url}`;
 
+        const h = {
+            'Content-Type': 'application/json',
+            'X-Cliente-Id': CLIENT_ID,
+            'Authorization': `Bearer ${TOKEN}`
+        };
+        if (E4_PRODUTO) h['X-Produto'] = E4_PRODUTO;
+
         const options = {
             method: req.method,
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Cliente-Id': CLIENT_ID,
-                'Authorization': `Bearer ${TOKEN}`
-            }
+            headers: h
         };
 
         if (req.method === 'GET') {
