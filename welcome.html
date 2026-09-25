@@ -406,22 +406,23 @@ function hexParaRgb(hex){
     return [parseInt(h.substr(0,2),16), parseInt(h.substr(2,2),16), parseInt(h.substr(4,2),16)];
 }
 
+// A tela grava o estado do LED no Firebase; o ESP32 lê de lá e acende/apaga.
+// Assim funciona direto da TV (HTTPS) sem depender de IP nem de rede local.
+var FIREBASE_LED = 'https://loja-bemvindo-default-rtdb.firebaseio.com/led.json';
+
 function enviarLED(ligar, corHex){
-    if (!conteudo.espIp) return;
     var body;
     if (!ligar) {
         body = { on: false };
     } else {
         var rgb = hexParaRgb(corHex);
-        body = { on: true, bri: 128, seg: [{ col: [[rgb[0], rgb[1], rgb[2]]] }] };
+        body = { on: true, r: rgb[0], g: rgb[1], b: rgb[2] };
     }
-    try {
-        fetch('http://' + conteudo.espIp + '/json/state', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        }).catch(function(){});
-    } catch(e) {}
+    fetch(FIREBASE_LED, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    }).catch(function(){});
 }
 
 function mostrarIdle(){
