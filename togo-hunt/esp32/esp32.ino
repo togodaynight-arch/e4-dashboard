@@ -41,6 +41,14 @@ const char* STORE_ID    = "store1";
 #define SOUND_NIVEL     LOW       // LOW = som detectado (LED do sensor acende). Se nao disparar, troque por HIGH
 #define SOUND_DURACAO   4000      // tempo da comemoracao em ms
 
+// SENSOR DE PRESENCA (PIR HC-SR501)
+// Liga: VCC->5V, GND->GND, OUT->PRESENCA_PIN.
+// Quando detecta movimento (alguem se aproxima), acende a fita para chamar atencao.
+#define PRESENCA_HABILITADO true
+#define PRESENCA_PIN      33        // pino do OUT do sensor (GPIO 33)
+#define PRESENCA_NIVEL    HIGH      // HIGH = movimento detectado
+#define PRESENCA_DURACAO  6000      // tempo que a fita fica acesa apos o movimento (ms)
+
 const unsigned long HEARTBEAT_MS = 5000;   // intervalo do heartbeat
 const unsigned long SUCESSO_MS   = 9000;   // duracao da celebracao
 
@@ -50,6 +58,7 @@ String estado = "normal";            // normal | desafio | sucesso
 unsigned long sucessoAte = 0;
 unsigned long somAte = 0;            // ate quando a comemoracao do som dura
 unsigned long somCooldown = 0;       // evita disparar repetido
+unsigned long presencaAte = 0;       // ate quando a luz de presenca fica acesa
 unsigned long ultimoHeartbeat = 0;
 unsigned long ultimoFrame = 0;
 int framePhase = 0;
@@ -79,12 +88,21 @@ void animarSucesso() {
   strip.show();
 }
 
+void animarPresenca() {
+  // luz quente (dourada) para chamar atencao quando alguem se aproxima
+  for (int i = 0; i < NUM_LEDS; i++) {
+    strip.setPixelColor(i, strip.Color(255, 200, 120));
+  }
+  strip.show();
+}
+
 void executarAnimacao() {
   if (millis() - ultimoFrame < 30) return;  // ~33fps
   ultimoFrame = millis();
   framePhase++;
 
-  if (millis() < somAte) animarSucesso();           // comemoracao do sensor de som
+  if (millis() < somAte) animarSucesso();               // palma/barulho -> comemoracao
+  else if (millis() < presencaAte) animarPresenca();     // movimento -> acende (chamada)
   else if (estado == "desafio") animarDesafio();
   else if (estado == "sucesso") animarSucesso();
   else apagar();
@@ -174,6 +192,10 @@ void setup() {
     pinMode(SOUND_PIN, INPUT_PULLUP);
   }
 
+  if (PRESENCA_HABILITADO) {
+    pinMode(PRESENCA_PIN, INPUT_PULLDOWN);
+  }
+
   if (conectarWifi()) {
     Serial.println("WiFi OK: " + WiFi.localIP().toString());
   } else {
@@ -193,6 +215,14 @@ void loop() {
       somAte = millis() + SOUND_DURACAO;
       somCooldown = millis() + 2000;  // so repete apos 2s
       Serial.println("Som detectado - comemoracao!");
+    }
+  }
+
+  // Sensor de presenca: ao detectar movimento, acende a fita (chamada)
+  if (PRESENCA_HABILITADO) {
+    bool movimento = (digitalRead(PRESENCA_PIN) == PRESENCA_NIVEL);
+    if (movimento) {
+      presencaAte = millis() + PRESENCA_DURACAO;
     }
   }
 

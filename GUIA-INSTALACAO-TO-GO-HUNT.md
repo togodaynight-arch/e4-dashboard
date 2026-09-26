@@ -221,3 +221,27 @@ Opcional: dá para ligar um **sensor de som** para a fita acender com uma palma/
 - `SOUND_HABILITADO`: `true` (ligado) ou `false` (desligado).
 - `SOUND_PIN`: pino do DO (padrão `32`).
 - `SOUND_NIVEL`: `LOW` (padrão). Se a fita não acender com som, troque por `HIGH`.
+
+---
+
+## 15. Sensor de presença (opcional) — PIR HC-SR501
+
+Opcional: dá para ligar um **sensor de presença** (movimento) para a fita acender quando alguém se aproxima da prateleira.
+
+**Ligação (3 fios):**
+
+| Sensor HC-SR501 | ESP32 |
+| --- | --- |
+| VCC | **5V** (pino 5V/VIN) |
+| GND | GND |
+| OUT (saída) | **GPIO 33** |
+
+- O sensor tem **dois parafusinhos** (potenciômetros): um ajusta a **distância** (alcance), o outro o **tempo** que fica ligado após detectar.
+- O jumper (pino de 2 posições na lateral) pode ficar na posição de repetição (H) para reativar continuamente.
+- Ao detectar movimento, a fita **acende com luz dourada** (chamada de atenção) por ~6 segundos.
+
+**Ajustes no código** (`esp32.ino`, na parte "SENSOR DE PRESENCA"):
+- `PRESENCA_HABILITADO`: `true` (ligado) ou `false` (desligado).
+- `PRESENCA_PIN`: pino do OUT (padrão `33`).
+- `PRESENCA_NIVEL`: `HIGH` (padrão). Se a fita não acender com movimento, troque por `LOW`.
+- `PRESENCA_DURACAO`: tempo aceso em ms (padrão `6000` = 6s).
