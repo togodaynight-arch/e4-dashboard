@@ -142,7 +142,8 @@ function renderDesafios(){
       '</div>' +
       '<div class="qrbox" style="margin-top:12px">' +
         '<img class="qr" src="'+qr+'">' +
-        '<div><div class="hint">URL do QR:</div><div class="mono">'+esc(url)+'</div><div class="hint" style="margin-top:6px">Cole no navegador para testar.</div></div>' +
+        '<div><div class="hint">URL do QR:</div><div class="mono">'+esc(url)+'</div><div class="hint" style="margin-top:6px">Cole no navegador para testar.</div>' +
+        '<button class="btn primary small" style="margin-top:10px" onclick="imprimirQR(\''+esc(c.name)+'\',\''+esc(url)+'\')">🖨️ Imprimir / baixar QR</button></div>' +
       '</div>' +
     '</div>';
   });
@@ -154,6 +155,23 @@ var storeBase = location.origin;
 function toggleDesafio(slug, ativo){
   api('/api/admin/challenges/'+slug, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({active:ativo}) })
     .then(function(r){ return r.json(); }).then(function(){ carregarDesafios(); });
+}
+
+// Abre uma janela pronta para imprimir (ou salvar em PDF) o QR Code.
+// Assim dá para imprimir em casa/escritório e levar pronto para a loja.
+function imprimirQR(nome, url){
+  var qr = 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=' + encodeURIComponent(url);
+  var w = window.open('', '_blank');
+  if(!w){ alert('Permita pop-ups para imprimir o QR.'); return; }
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>QR - ' + esc(nome) + '</title>' +
+    '<style>body{font-family:sans-serif;text-align:center;padding:40px;background:#fff;color:#111}' +
+    'h1{font-size:22px;margin-bottom:6px}.url{font-size:13px;color:#555;margin-bottom:20px;word-break:break-all}' +
+    'img{width:320px;height:320px}@media print{img{width:70mm;height:70mm}}</style></head><body>' +
+    '<h1>' + esc(nome) + '</h1><div class="url">' + esc(url) + '</div>' +
+    '<img src="' + qr + '">' +
+    '<script>window.onload=function(){setTimeout(function(){window.print();},600);};<\/script>' +
+    '</body></html>');
+  w.document.close();
 }
 
 function criarDesafio(){
