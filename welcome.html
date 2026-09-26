@@ -30,6 +30,19 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 .promo-desc{font-size:var(--fs-promo-desc,32px);color:#c9d0ee;letter-spacing:2px;font-weight:300;max-width:80%}
 .promo-glow{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .6s;background:radial-gradient(circle at 50% 35%, var(--cor,rgba(217,183,89,0.25)) 0%, transparent 55%)}
 
+.hunt{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px;opacity:0;transition:opacity .6s;background:radial-gradient(1200px 700px at 50% -10%, #1a1a3a 0%, #060612 60%)}
+.hunt.show{display:flex;opacity:1}
+.hunt-tag{font-size:18px;letter-spacing:8px;color:#ff4d6d;text-transform:uppercase;margin-bottom:22px;font-weight:600}
+.hunt-titulo{font-size:var(--fs-promo-titulo,88px);font-weight:900;color:#fff;letter-spacing:2px;line-height:1.05;margin-bottom:14px;text-shadow:0 0 60px rgba(255,77,109,0.45)}
+.hunt-pts{font-size:44px;font-weight:900;color:#ffd166;letter-spacing:2px;margin-bottom:20px;text-shadow:0 0 40px rgba(255,209,102,0.5)}
+.hunt-desc{font-size:var(--fs-promo-desc,32px);color:#c9d0ee;letter-spacing:2px;font-weight:300;max-width:80%;margin-bottom:30px}
+.hunt-rank{display:flex;flex-direction:column;gap:10px;width:min(760px,80vw)}
+.hunt-rank-row{display:flex;align-items:center;gap:16px;padding:12px 22px;background:rgba(20,25,50,0.55);border:1px solid #2a2a3a;border-radius:12px}
+.hunt-rank-pos{font-size:22px;width:36px;text-align:center}
+.hunt-rank-code{font-size:20px;font-weight:800;color:#ffd166;letter-spacing:2px}
+.hunt-rank-nome{flex:1;text-align:left;font-size:20px;color:#e6e6f7}
+.hunt-rank-pts{font-size:22px;font-weight:900;color:#fff}
+
 .imagem{position:fixed;inset:0;display:none;opacity:0;transition:opacity .6s;background:#000}
 .imagem.show{display:block;opacity:1}
 .imagem img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
@@ -115,6 +128,14 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
             <iframe id="video-frame" src="" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
         </div>
 
+        <div class="hunt" id="hunt">
+            <div class="hunt-tag">🎯 TO GO HUNT</div>
+            <div class="hunt-titulo" id="hunt-titulo"></div>
+            <div class="hunt-pts" id="hunt-pts"></div>
+            <div class="hunt-desc">Procure a prateleira iluminada e escaneie o QR Code.</div>
+            <div class="hunt-rank" id="hunt-rank"></div>
+        </div>
+
         <div class="welcome" id="welcome">
             <div class="logo" id="store-name-display">Loja</div>
             <div class="greeting" id="greeting-display">BEM-VINDO</div>
@@ -188,6 +209,7 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 <script>
 var FIREBASE_URL = 'https://loja-bemvindo-default-rtdb.firebaseio.com/config.json';
 var FIREBASE_IMAGENS = 'https://loja-bemvindo-default-rtdb.firebaseio.com/imagens/';
+var HUNT_BASE = 'https://loja-bemvindo-default-rtdb.firebaseio.com/togohunt';
 var LAT = -29.95111, LON = -51.09389;
 
 var conteudo = { loja:'TRANS BUS', mensagem:'BEM-VINDO', cidade:'Cachoeirinha - RS', slides:[], tempoBemvindo:8 };
@@ -374,9 +396,15 @@ function agendar(ms){
     carouselTimer = setTimeout(proximoSlide, ms);
 }
 
+function slidesEfetivos(){
+    var base = (conteudo.slides || []).slice();
+    if (huntState && huntState.ativo) base.push({ tipo:'hunt', tempo: 15 });
+    return base;
+}
+
 function proximoSlide(){
     if (modo === 'welcome') return;
-    var slides = conteudo.slides || [];
+    var slides = slidesEfetivos();
     if (modo === 'idle') {
         if (slides.length === 0) { mostrarIdle(); agendar(8000); return; }
         slideIndex = 0;
@@ -394,6 +422,7 @@ function esconderTudo(){
     document.getElementById('imagem').classList.remove('show');
     document.getElementById('clima').classList.remove('show');
     document.getElementById('video-slide').classList.remove('show');
+    document.getElementById('hunt').classList.remove('show');
     document.getElementById('promo-glow').style.opacity = '0';
     document.getElementById('promo').style.backgroundImage = 'none';
     pararVideo();
@@ -439,6 +468,7 @@ function mostrarSlide(s){
     else if (s.tipo === 'imagem') mostrarImagem(s);
     else if (s.tipo === 'clima') mostrarClima();
     else if (s.tipo === 'video') mostrarVideo(s);
+    else if (s.tipo === 'hunt') mostrarHunt();
     else mostrarIdle();
     // LED atrás da TV: acende se a tela tiver a opção ligada
     enviarLED(!!s.led, s.ledCor);
@@ -502,6 +532,64 @@ function mostrarImagem(s){
 function mostrarClima(){
     esconderTudo();
     document.getElementById('clima').classList.add('show');
+}
+
+// ========== TO GO HUNT (jogo integrado na mesma TV) ==========
+var huntState = { ativo:false, nome:'', pontos:0, ranking:[] };
+
+function escHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function carregarHunt(){
+    fetch(HUNT_BASE + '/challenges.json')
+    .then(function(r){ return r.json(); })
+    .then(function(chs){
+        var ativo = null;
+        if (chs) {
+            for (var k in chs) {
+                var c = chs[k];
+                if (c && c.active !== false) { ativo = c; break; }
+            }
+        }
+        huntState.ativo = !!ativo;
+        huntState.nome = ativo ? ativo.name : '';
+        huntState.pontos = ativo ? ativo.points : 0;
+        if (!ativo) { huntState.ranking = []; return; }
+        return fetch(HUNT_BASE + '/pointsLedger.json').then(function(r){ return r.json(); })
+        .then(function(ledger){
+            ledger = ledger || {};
+            var totais = {};
+            for (var k in ledger) {
+                var e = ledger[k];
+                if (e && e.participantId) totais[e.participantId] = (totais[e.participantId] || 0) + Number(e.amount || 0);
+            }
+            return fetch(HUNT_BASE + '/participants.json').then(function(r){ return r.json(); }).then(function(parts){
+                parts = parts || {};
+                var lista = Object.keys(totais).map(function(pid){
+                    var p = parts[pid] || { id: pid, nickname: 'Anonimo' };
+                    return { code: p.id, nickname: p.nickname || 'Anonimo', points: totais[pid] };
+                }).sort(function(a,b){ return b.points - a.points; }).slice(0,5);
+                huntState.ranking = lista;
+            });
+        });
+    })
+    .catch(function(){});
+}
+
+function mostrarHunt(){
+    esconderTudo();
+    document.getElementById('hunt-titulo').textContent = huntState.nome || 'Desafio';
+    document.getElementById('hunt-pts').textContent = '+' + huntState.pontos + ' pontos';
+    var el = document.getElementById('hunt-rank');
+    var medalhas = ['🥇','🥈','🥉'];
+    if (!huntState.ranking.length) {
+        el.innerHTML = '<div class="hunt-rank-row"><span class="hunt-rank-nome" style="text-align:center">Seja o primeiro a pontuar!</span></div>';
+    } else {
+        el.innerHTML = huntState.ranking.map(function(p,i){
+            var pos = i < 3 ? medalhas[i] : (i+1);
+            return '<div class="hunt-rank-row"><span class="hunt-rank-pos">'+pos+'</span><span class="hunt-rank-code">#'+escHtml(p.code)+'</span><span class="hunt-rank-nome">'+escHtml(p.nickname)+'</span><span class="hunt-rank-pts">'+p.points+' pts</span></div>';
+        }).join('');
+    }
+    document.getElementById('hunt').classList.add('show');
 }
 
 function extrairIdYouTube(u){
@@ -606,10 +694,12 @@ function verificarEntrada(){
 carregarControlesTela();
 carregarConteudo();
 carregarClima();
+carregarHunt();
 iniciarCarrossel();
 
 setInterval(carregarConteudo, 10000);
 setInterval(carregarClima, 15 * 60 * 1000);
+setInterval(carregarHunt, 15000);
 setInterval(verificarEntrada, 3000);
 </script>
 </body>
