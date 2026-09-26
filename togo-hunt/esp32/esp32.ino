@@ -33,6 +33,14 @@ const char* STORE_ID    = "store1";
 #define LED_TYPE     NEO_RBG // se a cor sair trocada, teste NEO_RGB
 #define BRILHO_BASE  60      // brilho da pulsacao (0-255)
 
+// SENSOR DE SOM (KEYES KY-038 / KY-037)
+// Liga: VCC->3.3V, GND->GND, DO->SOUND_PIN (o AO nao e usado).
+// Quando detecta som (palma/barulho), dispara a animacao de comemoracao.
+#define SOUND_HABILITADO true
+#define SOUND_PIN       32        // pino do DO do sensor (GPIO 32, tem pull-up interno)
+#define SOUND_NIVEL     LOW       // LOW = som detectado (LED do sensor acende). Se nao disparar, troque por HIGH
+#define SOUND_DURACAO   4000      // tempo da comemoracao em ms
+
 const unsigned long HEARTBEAT_MS = 5000;   // intervalo do heartbeat
 const unsigned long SUCESSO_MS   = 9000;   // duracao da celebracao
 
@@ -40,6 +48,8 @@ Adafruit_NeoPixel strip(NUM_LEDS, LED_PIN, LED_TYPE + NEO_KHZ800);
 
 String estado = "normal";            // normal | desafio | sucesso
 unsigned long sucessoAte = 0;
+unsigned long somAte = 0;            // ate quando a comemoracao do som dura
+unsigned long somCooldown = 0;       // evita disparar repetido
 unsigned long ultimoHeartbeat = 0;
 unsigned long ultimoFrame = 0;
 int framePhase = 0;
@@ -74,7 +84,8 @@ void executarAnimacao() {
   ultimoFrame = millis();
   framePhase++;
 
-  if (estado == "desafio") animarDesafio();
+  if (millis() < somAte) animarSucesso();           // comemoracao do sensor de som
+  else if (estado == "desafio") animarDesafio();
   else if (estado == "sucesso") animarSucesso();
   else apagar();
 
@@ -159,6 +170,10 @@ void setup() {
   delay(400);
   apagar();
 
+  if (SOUND_HABILITADO) {
+    pinMode(SOUND_PIN, INPUT_PULLUP);
+  }
+
   if (conectarWifi()) {
     Serial.println("WiFi OK: " + WiFi.localIP().toString());
   } else {
@@ -170,6 +185,16 @@ void setup() {
 
 void loop() {
   executarAnimacao();
+
+  // Sensor de som: ao detectar (palma/barulho), dispara a comemoracao
+  if (SOUND_HABILITADO) {
+    bool somDetectado = (digitalRead(SOUND_PIN) == SOUND_NIVEL);
+    if (somDetectado && millis() > somCooldown) {
+      somAte = millis() + SOUND_DURACAO;
+      somCooldown = millis() + 2000;  // so repete apos 2s
+      Serial.println("Som detectado - comemoracao!");
+    }
+  }
 
   if (millis() - ultimoHeartbeat >= HEARTBEAT_MS) {
     ultimoHeartbeat = millis();
