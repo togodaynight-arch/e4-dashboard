@@ -37,7 +37,7 @@ const char* STORE_ID    = "store1";
 // Liga: VCC->3.3V, GND->GND, DO->SOUND_PIN (o AO nao e usado).
 // Quando detecta som (palma/barulho), dispara a animacao de comemoracao.
 #define SOUND_HABILITADO true
-#define SOUND_PIN       32        // pino do DO do sensor (GPIO 32, tem pull-up interno)
+#define SOUND_PIN       27        // pino do DO do sensor (ligado no "D" da placa)
 #define SOUND_NIVEL     LOW       // LOW = som detectado (LED do sensor acende). Se nao disparar, troque por HIGH
 #define SOUND_DURACAO   4000      // tempo da comemoracao em ms
 
@@ -45,7 +45,7 @@ const char* STORE_ID    = "store1";
 // Liga: VCC->5V, GND->GND, OUT->PRESENCA_PIN.
 // Quando detecta movimento (alguem se aproxima), acende a fita para chamar atencao.
 #define PRESENCA_HABILITADO true
-#define PRESENCA_PIN      33        // pino do OUT do sensor (GPIO 33)
+#define PRESENCA_PIN      32        // pino do OUT do sensor
 #define PRESENCA_NIVEL    HIGH      // HIGH = movimento detectado
 #define PRESENCA_DURACAO  6000      // tempo que a fita fica acesa apos o movimento (ms)
 
@@ -137,9 +137,14 @@ void heartbeat() {
   http.addHeader("Content-Type", "application/json");
   http.setTimeout(8000);
 
+  int somLido = (SOUND_HABILITADO && digitalRead(SOUND_PIN) == SOUND_NIVEL) ? 1 : 0;
+  int presencaLida = (PRESENCA_HABILITADO && digitalRead(PRESENCA_PIN) == PRESENCA_NIVEL) ? 1 : 0;
+
   String body = "{\"deviceId\":\"" + String(DEVICE_ID) +
                 "\",\"storeId\":\"" + String(STORE_ID) +
-                "\",\"name\":\"ESP32 " + String(DEVICE_ID) + "\"}";
+                "\",\"name\":\"ESP32 " + String(DEVICE_ID) + "\"" +
+                ",\"som\":" + String(somLido) +
+                ",\"presenca\":" + String(presencaLida) + "}";
 
   int code = http.POST(body);
   if (code == 200) {

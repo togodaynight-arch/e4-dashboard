@@ -406,6 +406,8 @@ async function handler(req, res) {
             lastHeartbeatAt: now,
             online: true,
             state: body.state || (existing && existing.state) || 'normal',
+            som: (body.som === 1 || body.som === true) ? true : false,
+            presenca: (body.presenca === 1 || body.presenca === true) ? true : false,
             pendingCommand: null
         };
         await fbPut('devices/' + deviceId, device);
@@ -439,6 +441,13 @@ async function handler(req, res) {
         await fbPut('devices/' + deviceId, existing);
         await fbPost('deviceEvents', { deviceId, type: 'state', state: existing.state, at: now });
         sendJSON(res, 200, { ok: true });
+        return;
+    }
+
+    // Status dos dispositivos (publico, para a pagina de diagnostico)
+    if (url === '/api/devices/status' && req.method === 'GET') {
+        const devices = (await fbGet('devices')) || {};
+        sendJSON(res, 200, { ok: true, devices });
         return;
     }
 

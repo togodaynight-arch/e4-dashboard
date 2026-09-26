@@ -58,18 +58,26 @@ function render(){
     document.getElementById('grid').innerHTML = card('Servidor', false, 'OFFLINE', 'Não conseguiu carregar o estado');
   });
 
-  // Dispositivos
-  fetch('/api/admin/devices').then(function(r){ return r.json(); }).then(function(d){
+  // Dispositivos (e leitura dos sensores)
+  fetch('/api/devices/status').then(function(r){ return r.json(); }).then(function(d){
     var devs = Object.values(d.devices || {});
     var el = document.getElementById('grid');
     devs.forEach(function(dev){
       var online = dev.lastHeartbeatAt && (Date.now() - new Date(dev.lastHeartbeatAt).getTime() < 30000);
       var seg = dev.lastHeartbeatAt ? Math.round((Date.now() - new Date(dev.lastHeartbeatAt).getTime())/1000) : null;
+
+      var somDet = !!dev.som;
+      var presDet = !!dev.presenca;
+
       var extra = document.createElement('div');
       extra.className = 'card';
       extra.innerHTML = '<div class="titulo">ESP32 — ' + esc(dev.deviceId) + '</div>' +
         '<div><span class="dot '+(online?'ok':'off')+'"></span><span class="valor">'+(online?'ONLINE':'OFFLINE')+'</span></div>' +
-        '<div class="detalhe">Último heartbeat: '+(seg!=null?('há '+seg+'s'):'nunca')+' · Estado: '+esc(dev.state||'—')+'</div>';
+        '<div class="detalhe">Último heartbeat: '+(seg!=null?('há '+seg+'s'):'nunca')+' · Estado: '+esc(dev.state||'—')+'</div>' +
+        '<div class="detalhe" style="margin-top:8px">' +
+          '<span class="dot '+(somDet?'ok':'off')+'"></span> Som: '+(somDet?'DETECTADO':'silêncio')+'<br>' +
+          '<span class="dot '+(presDet?'ok':'off')+'"></span> Presença: '+(presDet?'DETECTADA':'ninguém') +
+        '</div>';
       el.appendChild(extra);
     });
   }).catch(function(){});
