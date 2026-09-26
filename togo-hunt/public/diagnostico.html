@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TO GO HUNT — Diagnóstico</title>
+<style>
+  :root { --bg:#0b0b1a; --card:#14142b; --ok:#06d6a0; --off:#ff4d6d; --txt:#f2f2ff; --line:#2a2a4a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--txt); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; padding:24px; }
+  h1 { font-size:24px; margin-bottom:20px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px; }
+  .card .titulo { font-size:13px; text-transform:uppercase; letter-spacing:1px; color:#b9b9d4; margin-bottom:10px; }
+  .card .valor { font-size:28px; font-weight:900; }
+  .card .detalhe { font-size:13px; color:#b9b9d4; margin-top:6px; }
+  .dot { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:8px; }
+  .dot.ok { background:var(--ok); box-shadow:0 0 10px var(--ok); }
+  .dot.off { background:var(--off); box-shadow:0 0 10px var(--off); }
+  .mono { font-family:monospace; color:#ffd166; }
+  .refresh { margin-top:18px; font-size:13px; color:#6d6d92; }
+</style>
+</head>
+<body>
+<h1>🩺 Diagnóstico — TO GO HUNT</h1>
+<div class="grid" id="grid"></div>
+<div class="refresh">Atualiza automaticamente a cada 5s.</div>
+
+<script>
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function card(titulo, ok, valor, detalhe){
+  return '<div class="card"><div class="titulo">'+titulo+'</div>' +
+    '<div><span class="dot '+(ok?'ok':'off')+'"></span><span class="valor">'+(ok?'ONLINE':'OFFLINE')+'</span></div>' +
+    '<div class="detalhe">'+detalhe+'</div></div>';
+}
+
+function render(){
+  fetch('/api/hunt/state').then(function(r){ return r.json(); }).then(function(d){
+    var html = '';
+    // Servidor
+    html += card('Servidor', true, 'ONLINE', 'TO GO HUNT respondendo');
+    // Banco
+    html += card('Banco (Firebase)', d.ok, d.ok?'ONLINE':'OFFLINE', 'Persistência de pontos/ranking');
+    // Desafio
+    var ativo = d.activeChallenge && d.activeChallenge.active !== false;
+    html += '<div class="card"><div class="titulo">Desafio</div>' +
+      '<div><span class="dot '+(ativo?'ok':'off')+'"></span><span class="valor">'+(ativo?'ATIVO':'INATIVO')+'</span></div>' +
+      '<div class="detalhe">'+(d.activeChallenge? esc(d.activeChallenge.name)+' · +'+d.activeChallenge.points+' pts':'Nenhum desafio ativo')+'</div></div>';
+    // QR
+    var temQr = !!d.activeChallenge;
+    html += '<div class="card"><div class="titulo">QR Code</div>' +
+      '<div><span class="dot '+(temQr?'ok':'off')+'"></span><span class="valor">'+(temQr?'FUNCIONANDO':'SEM DESAFIO')+'</span></div>' +
+      '<div class="detalhe">'+(temQr?'URL gerada no painel admin':'Crie um desafio no admin')+'</div></div>';
+
+    document.getElementById('grid').innerHTML = html;
+  }).catch(function(){
+    document.getElementById('grid').innerHTML = card('Servidor', false, 'OFFLINE', 'Não conseguiu carregar o estado');
+  });
+
+  // Dispositivos
+  fetch('/api/admin/devices').then(function(r){ return r.json(); }).then(function(d){
+    var devs = Object.values(d.devices || {});
+    var el = document.getElementById('grid');
+    devs.forEach(function(dev){
+      var online = dev.lastHeartbeatAt && (Date.now() - new Date(dev.lastHeartbeatAt).getTime() < 30000);
+      var seg = dev.lastHeartbeatAt ? Math.round((Date.now() - new Date(dev.lastHeartbeatAt).getTime())/1000) : null;
+      var extra = document.createElement('div');
+      extra.className = 'card';
+      extra.innerHTML = '<div class="titulo">ESP32 — ' + esc(dev.deviceId) + '</div>' +
+        '<div><span class="dot '+(online?'ok':'off')+'"></span><span class="valor">'+(online?'ONLINE':'OFFLINE')+'</span></div>' +
+        '<div class="detalhe">Último heartbeat: '+(seg!=null?('há '+seg+'s'):'nunca')+' · Estado: '+esc(dev.state||'—')+'</div>';
+      el.appendChild(extra);
+    });
+  }).catch(function(){});
+}
+
+render();
+setInterval(render, 5000);
+</script>
+</body>
+</html>

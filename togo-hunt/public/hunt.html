@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TO GO HUNT</title>
+<style>
+  :root { --bg:#0b0b1a; --card:#14142b; --accent:#ff4d6d; --accent2:#ffd166; --ok:#06d6a0; --txt:#f2f2ff; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--txt); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px;
+    background:radial-gradient(1200px 600px at 50% -10%, #1a1a3a 0%, var(--bg) 60%); }
+  .wrap { width:100%; max-width:440px; text-align:center; }
+  .logo { font-size:13px; letter-spacing:4px; color:var(--accent); text-transform:uppercase; margin-bottom:6px; }
+  h1 { font-size:40px; letter-spacing:2px; background:linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .card { background:var(--card); border:1px solid #2a2a4a; border-radius:18px; padding:26px 22px; margin-top:18px; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+  .emoji { font-size:56px; margin-bottom:8px; }
+  .nome { font-size:24px; font-weight:800; margin-bottom:8px; }
+  .desc { color:#b9b9d4; font-size:15px; line-height:1.5; margin-bottom:6px; }
+  .pts { display:inline-block; background:rgba(255,209,102,.12); color:var(--accent2); font-weight:800; padding:6px 14px; border-radius:999px; margin-top:8px; font-size:16px; }
+  label { display:block; text-align:left; font-size:12px; color:#b9b9d4; margin:16px 0 6px; letter-spacing:1px; text-transform:uppercase; }
+  input { width:100%; padding:14px; border-radius:12px; border:1px solid #3a3a5c; background:#0d0d20; color:var(--txt); font-size:16px; }
+  input:focus { outline:2px solid var(--accent); border-color:transparent; }
+  button { width:100%; margin-top:20px; padding:16px; border:none; border-radius:14px; background:linear-gradient(90deg,var(--accent),#ff7b4d); color:#fff; font-size:18px; font-weight:800; letter-spacing:1px; cursor:pointer; }
+  button:active { transform:scale(.98); }
+  button[disabled] { opacity:.5; cursor:not-allowed; }
+  .result { margin-top:18px; padding:18px; border-radius:14px; display:none; }
+  .result.ok { display:block; background:rgba(6,214,160,.1); border:1px solid var(--ok); }
+  .result.erro { display:block; background:rgba(255,77,109,.1); border:1px solid var(--accent); }
+  .result .big { font-size:32px; font-weight:900; }
+  .result .sub { color:#b9b9d4; margin-top:4px; font-size:14px; }
+  .hint { margin-top:12px; font-size:12px; color:#6d6d92; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">TO GO DAY/NIGHT</div>
+  <h1>TO GO HUNT</h1>
+
+  <div id="loading" class="card">
+    <div class="emoji">🎯</div>
+    <div class="nome">Carregando desafio...</div>
+  </div>
+
+  <div id="form" class="card" style="display:none;">
+    <div class="emoji">🎯</div>
+    <div class="nome" id="c-nome">Desafio</div>
+    <div class="desc" id="c-desc"></div>
+    <div class="pts" id="c-pts">+10 pontos</div>
+
+    <label for="nickname">Seu apelido</label>
+    <input id="nickname" maxlength="30" placeholder="Como quer aparecer no ranking">
+
+    <label for="phone">Telefone <span style="text-transform:none;color:#6d6d92;">(opcional, só para guardar seus pontos)</span></label>
+    <input id="phone" inputmode="tel" placeholder="(00) 00000-0000">
+
+    <button id="btn">CONCLUIR DESAFIO ⚡</button>
+    <div class="hint">Seus pontos ficam salvos com este apelido.</div>
+  </div>
+
+  <div id="result" class="result"></div>
+</div>
+
+<script>
+var slug = decodeURIComponent(location.pathname.split('/hunt/')[1] || '').replace(/[^a-zA-Z0-9\-_]/g,'');
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function carregar(){
+  if(!slug){ mostrarErro('QR Code inválido.'); return; }
+  fetch('/api/hunt/challenge?slug=' + slug)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d.ok || !d.challenge){ mostrarErro('Desafio não encontrado.'); return; }
+      var c = d.challenge;
+      if(c.active === false){ mostrarErro('Este desafio não está mais ativo.'); return; }
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('form').style.display = 'block';
+      document.getElementById('c-nome').textContent = c.name;
+      document.getElementById('c-desc').textContent = c.description || 'Encontre o produto secreto na prateleira iluminada.';
+      document.getElementById('c-pts').textContent = '+' + c.points + ' pontos';
+    })
+    .catch(function(){ mostrarErro('Erro ao conectar. Tente novamente.'); });
+}
+
+function mostrarErro(msg){
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('form').style.display = 'none';
+  var r = document.getElementById('result');
+  r.className = 'result erro';
+  r.innerHTML = '<div class="big">Ops!</div><div class="sub">' + esc(msg) + '</div>';
+}
+
+function enviar(){
+  var nick = document.getElementById('nickname').value.trim();
+  if(!nick){ alert('Digite um apelido para participar.'); return; }
+  var btn = document.getElementById('btn');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  fetch('/api/hunt/participate', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ slug: slug, nickname: nick, phone: document.getElementById('phone').value })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    var r = document.getElementById('result');
+    document.getElementById('form').style.display = 'none';
+    if(d.ok){
+      r.className = 'result ok';
+      r.innerHTML = '<div class="big">Parabéns!</div><div class="sub" style="font-size:26px;color:var(--accent2);font-weight:900">+'+d.pontos+' pontos</div><div class="sub" style="margin-top:6px">Seu código: <b>#'+esc(d.participant.code)+'</b><br>Total: '+d.total+' pontos</div>';
+    } else if(d.erro === 'ja_completou'){
+      r.className = 'result erro';
+      r.innerHTML = '<div class="big">Já feito!</div><div class="sub">Você já completou este desafio. Código: #'+esc(d.participant && d.participant.code)+'</div>';
+    } else if(d.erro === 'desafio_inativo' || d.erro === 'desafio_expirado'){
+      r.className = 'result erro';
+      r.innerHTML = '<div class="big">Desafio fechado</div><div class="sub">Este desafio não está mais disponível.</div>';
+    } else {
+      r.className = 'result erro';
+      r.innerHTML = '<div class="big">Ops!</div><div class="sub">' + esc(d.erro || 'Erro inesperado') + '</div>';
+    }
+  })
+  .catch(function(){
+    btn.disabled = false;
+    btn.textContent = 'CONCLUIR DESAFIO ⚡';
+    mostrarErro('Erro ao conectar. Tente novamente.');
+  });
+}
+
+document.getElementById('btn').addEventListener('click', enviar);
+carregar();
+</script>
+</body>
+</html>

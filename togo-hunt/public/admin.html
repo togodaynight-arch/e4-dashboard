@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TO GO HUNT — Admin</title>
+<style>
+  :root { --bg:#0b0b1a; --card:#14142b; --accent:#ff4d6d; --accent2:#ffd166; --ok:#06d6a0; --txt:#f2f2ff; --line:#2a2a4a; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--txt); font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; padding:24px; }
+  .top { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:20px; }
+  h1 { font-size:26px; letter-spacing:1px; background:linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .store { font-size:13px; color:#b9b9d4; }
+  .tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+  .tab { padding:10px 18px; border-radius:10px; background:var(--card); border:1px solid var(--line); cursor:pointer; font-size:14px; }
+  .tab.ativa { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; }
+  .painel { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px; margin-bottom:18px; }
+  .painel h2 { font-size:16px; margin-bottom:14px; color:var(--accent2); }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th,td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); }
+  th { color:#b9b9d4; font-size:12px; text-transform:uppercase; letter-spacing:.5px; }
+  .btn { padding:10px 16px; border:none; border-radius:10px; cursor:pointer; font-size:14px; font-weight:700; }
+  .btn.primary { background:linear-gradient(90deg,var(--accent),#ff7b4d); color:#fff; }
+  .btn.ghost { background:transparent; border:1px solid var(--line); color:var(--txt); }
+  .btn.danger { background:#3a1020; border:1px solid var(--accent); color:var(--accent); }
+  .btn.small { padding:6px 10px; font-size:12px; }
+  input, textarea, select { width:100%; padding:11px; border-radius:10px; border:1px solid var(--line); background:#0d0d20; color:var(--txt); font-size:14px; margin-bottom:10px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media(max-width:720px){ .grid{ grid-template-columns:1fr; } }
+  label { display:block; font-size:12px; color:#b9b9d4; margin-bottom:5px; }
+  .badge { display:inline-block; padding:3px 9px; border-radius:999px; font-size:11px; font-weight:700; }
+  .badge.ok { background:rgba(6,214,160,.15); color:var(--ok); }
+  .badge.off { background:rgba(255,77,109,.15); color:var(--accent); }
+  .qr { background:#fff; padding:10px; border-radius:10px; width:150px; height:150px; }
+  .qrbox { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+  .mono { font-family:monospace; color:var(--accent2); word-break:break-all; }
+  .search { max-width:320px; }
+  .hint { color:#6d6d92; font-size:12px; margin-top:8px; }
+</style>
+</head>
+<body>
+<div class="top">
+  <div><h1>TO GO HUNT — Admin</h1><div class="store" id="store-info">…</div></div>
+  <a class="btn ghost" href="/monitor" target="_blank">Abrir monitor</a>
+</div>
+
+<div class="tabs">
+  <div class="tab ativa" data-t="desafios">🎯 Desafios</div>
+  <div class="tab" data-t="participantes">👥 Participantes</div>
+  <div class="tab" data-t="ranking">🏆 Ranking</div>
+  <div class="tab" data-t="dispositivos">💡 Dispositivos</div>
+</div>
+
+<!-- DESAFIOS -->
+<div class="painel" id="p-desafios">
+  <h2>Desafios</h2>
+  <div class="grid">
+    <div>
+      <h3 style="margin-bottom:12px;font-size:14px">Novo desafio</h3>
+      <label>Nome</label><input id="f-nome" placeholder="Encontre o produto secreto">
+      <label>Descrição</label><textarea id="f-desc" rows="2" placeholder="Procure a prateleira iluminada…"></textarea>
+      <label>Pontos</label><input id="f-pontos" type="number" value="10">
+      <label>Produto relacionado (opcional)</label><input id="f-produto" placeholder="ex: Energético">
+      <label>Loja (STORE_ID)</label><input id="f-loja" value="store1">
+      <label><input type="checkbox" id="f-ativo" checked> Ativo</label>
+      <button class="btn primary" id="btn-criar" style="width:100%">Criar desafio</button>
+    </div>
+    <div>
+      <h3 style="margin-bottom:12px;font-size:14px">Desafios existentes</h3>
+      <div id="lista-desafios"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PARTICIPANTES -->
+<div class="painel" id="p-participantes" style="display:none">
+  <h2>Participantes</h2>
+  <input class="search" id="busca-part" placeholder="Pesquisar apelido ou código…" oninput="renderParticipantes()">
+  <div style="overflow:auto"><table><thead><tr><th>Código</th><th>Apelido</th><th>Telefone</th><th>Pontos</th><th>Criado em</th></tr></thead><tbody id="tb-part"></tbody></table></div>
+</div>
+
+<!-- RANKING -->
+<div class="painel" id="p-ranking" style="display:none">
+  <h2>Ranking (TOP 10)</h2>
+  <div style="overflow:auto"><table><thead><tr><th>#</th><th>Código</th><th>Apelido</th><th>Pontos</th></tr></thead><tbody id="tb-rank"></tbody></table></div>
+  <button class="btn danger" id="btn-reset" style="margin-top:14px">Resetar campanha (zerar pontos)</button>
+</div>
+
+<!-- DISPOSITIVOS -->
+<div class="painel" id="p-dispositivos" style="display:none">
+  <h2>Dispositivos (ESP32)</h2>
+  <div style="overflow:auto"><table><thead><tr><th>Dispositivo</th><th>Loja</th><th>Status</th><th>Estado</th><th>Último contato</th></tr></thead><tbody id="tb-dev"></tbody></table></div>
+  <div class="hint">O ESP32 envia heartbeat a cada poucos segundos. "Online" se recebeu contato nos últimos 30s.</div>
+</div>
+
+<script>
+var participantes = [];
+var desafios = [];
+var devices = {};
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function api(p, o){ return fetch(p, o || {}); }
+
+function showTab(t){
+  document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('ativa'); });
+  document.querySelector('.tab[data-t="'+t+'"]').classList.add('ativa');
+  ['desafios','participantes','ranking','dispositivos'].forEach(function(id){ document.getElementById('p-'+id).style.display = (id===t?'':'none'); });
+  if(t==='participantes') carregarParticipantes();
+  if(t==='ranking') carregarRanking();
+  if(t==='dispositivos') carregarDevices();
+}
+document.querySelectorAll('.tab').forEach(function(t){ t.addEventListener('click', function(){ showTab(t.dataset.t); }); });
+
+function loadStatus(){
+  api('/api/admin/status').then(function(r){ return r.json(); }).then(function(d){
+    if(d.ok){
+      document.getElementById('store-info').textContent = 'Loja: ' + d.store.id + ' — ' + d.store.name + ' — ' + d.store.baseUrl;
+    }
+  }).catch(function(){});
+}
+
+function carregarDesafios(){
+  api('/api/admin/challenges').then(function(r){ return r.json(); }).then(function(d){
+    desafios = d.challenges || [];
+    renderDesafios();
+  }).catch(function(){});
+}
+
+function renderDesafios(){
+  var el = document.getElementById('lista-desafios');
+  if(!desafios.length){ el.innerHTML = '<div class="hint">Nenhum desafio criado ainda.</div>'; return; }
+  var html = '';
+  desafios.forEach(function(c){
+    var url = storeBase + '/hunt/' + c.slug;
+    var qr = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(url);
+    html += '<div class="painel" style="padding:16px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">' +
+        '<div><b>'+esc(c.name)+'</b> <span class="badge '+(c.active?'ok':'off')+'">'+(c.active?'ativo':'inativo')+'</span><div class="hint">+'+c.points+' pts · loja '+esc(c.storeId)+'</div></div>' +
+        '<div style="display:flex;gap:6px">' +
+          '<button class="btn small '+(c.active?'danger':'primary')+'" onclick="toggleDesafio(\''+c.slug+'\', '+(c.active?'false':'true')+')">'+(c.active?'Desativar':'Ativar')+'</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="qrbox" style="margin-top:12px">' +
+        '<img class="qr" src="'+qr+'">' +
+        '<div><div class="hint">URL do QR:</div><div class="mono">'+esc(url)+'</div><div class="hint" style="margin-top:6px">Cole no navegador para testar.</div></div>' +
+      '</div>' +
+    '</div>';
+  });
+  el.innerHTML = html;
+}
+
+var storeBase = location.origin;
+
+function toggleDesafio(slug, ativo){
+  api('/api/admin/challenges/'+slug, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({active:ativo}) })
+    .then(function(r){ return r.json(); }).then(function(){ carregarDesafios(); });
+}
+
+function criarDesafio(){
+  var body = {
+    name: document.getElementById('f-nome').value,
+    description: document.getElementById('f-desc').value,
+    points: Number(document.getElementById('f-pontos').value) || 0,
+    productName: document.getElementById('f-produto').value,
+    storeId: document.getElementById('f-loja').value || 'store1',
+    active: document.getElementById('f-ativo').checked
+  };
+  if(!body.name){ alert('Informe o nome do desafio.'); return; }
+  api('/api/admin/challenges', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(d.ok){ alert('Desafio criado! QR: ' + d.qrUrl); carregarDesafios(); }
+      else alert('Erro ao criar.');
+    });
+}
+document.getElementById('btn-criar').addEventListener('click', criarDesafio);
+
+function carregarParticipantes(){
+  api('/api/admin/participants').then(function(r){ return r.json(); }).then(function(d){
+    participantes = d.participants || [];
+    renderParticipantes();
+  });
+}
+function renderParticipantes(){
+  var q = (document.getElementById('busca-part').value || '').toLowerCase();
+  var html = '';
+  participantes.filter(function(p){
+    return !q || (p.nickname||'').toLowerCase().indexOf(q)!==-1 || (p.id||'').toLowerCase().indexOf(q)!==-1;
+  }).forEach(function(p){
+    html += '<tr><td class="mono">#'+esc(p.id)+'</td><td>'+esc(p.nickname)+'</td><td>'+(p.phone?esc(p.phone):'—')+'</td><td><b>'+p.points+'</b></td><td>'+esc((p.createdAt||'').slice(0,10))+'</td></tr>';
+  });
+  document.getElementById('tb-part').innerHTML = html || '<tr><td colspan="5" class="hint">Nenhum participante.</td></tr>';
+}
+
+function carregarRanking(){
+  api('/api/hunt/ranking').then(function(r){ return r.json(); }).then(function(d){
+    var rank = d.ranking || [];
+    var medalhas = ['🥇','🥈','🥉'];
+    var html = '';
+    rank.forEach(function(p,i){
+      html += '<tr><td>'+(i<3?medalhas[i]:(i+1))+'</td><td class="mono">#'+esc(p.code)+'</td><td>'+esc(p.nickname)+'</td><td><b>'+p.points+'</b></td></tr>';
+    });
+    document.getElementById('tb-rank').innerHTML = html || '<tr><td colspan="4" class="hint">Sem pontuação ainda.</td></tr>';
+  });
+}
+document.getElementById('btn-reset').addEventListener('click', function(){
+  if(!confirm('Zerar TODOS os pontos e participações? Esta ação não pode ser desfeita.')) return;
+  api('/api/admin/ranking/reset', { method:'POST' }).then(function(r){ return r.json(); }).then(function(){
+    alert('Campanha resetada.'); carregarRanking();
+  });
+});
+
+function carregarDevices(){
+  api('/api/admin/devices').then(function(r){ return r.json(); }).then(function(d){
+    devices = d.devices || {};
+    var html = '';
+    Object.values(devices).forEach(function(dev){
+      var online = dev.lastHeartbeatAt && (Date.now() - new Date(dev.lastHeartbeatAt).getTime() < 30000);
+      html += '<tr><td>'+esc(dev.deviceId)+'</td><td>'+esc(dev.storeId)+'</td><td><span class="badge '+(online?'ok':'off')+'">'+(online?'online':'offline')+'</span></td><td>'+esc(dev.state||'—')+'</td><td>'+esc((dev.lastHeartbeatAt||'').replace('T',' ').slice(0,19))+'</td></tr>';
+    });
+    document.getElementById('tb-dev').innerHTML = html || '<tr><td colspan="5" class="hint">Nenhum dispositivo conectado ainda.</td></tr>';
+  });
+}
+setInterval(carregarDevices, 5000);
+
+loadStatus();
+carregarDesafios();
+</script>
+</body>
+</html>

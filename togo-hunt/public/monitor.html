@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TO GO HUNT — Monitor</title>
+<style>
+  :root { --bg:#0b0b1a; --accent:#ff4d6d; --accent2:#ffd166; --ok:#06d6a0; --txt:#f2f2ff; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html,body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; }
+  body { background:radial-gradient(1400px 700px at 50% -10%, #1a1a3a 0%, var(--bg) 55%); }
+  .tela { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6vw;
+    opacity:0; transform:scale(.96); transition:opacity .6s ease, transform .6s ease; pointer-events:none; }
+  .tela.ativa { opacity:1; transform:scale(1); }
+  .logo { font-size:2.2vh; letter-spacing:.5em; color:var(--accent); text-transform:uppercase; margin-bottom:2vh; }
+  h1 { font-size:9vh; letter-spacing:.06em; background:linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .emoji { font-size:14vh; margin-bottom:2vh; }
+  .txt { font-size:4.5vh; font-weight:700; max-width:80vw; line-height:1.35; color:#e6e6f7; }
+  .sub { font-size:3vh; color:#b9b9d4; margin-top:1.5vh; max-width:70vw; }
+
+  /* ranking */
+  .rank { width:min(80vw,700px); margin-top:4vh; }
+  .rank .row { display:flex; align-items:center; gap:2vw; padding:1.6vh 2.5vw; margin:1.2vh 0; background:#14142b; border:1px solid #2a2a4a; border-radius:14px; }
+  .rank .pos { font-size:3.6vh; width:3vw; text-align:center; }
+  .rank .code { font-size:3.4vh; font-weight:800; color:var(--accent2); letter-spacing:.1em; }
+  .rank .nick { flex:1; font-size:3vh; text-align:left; color:#e6e6f7; }
+  .rank .pts { font-size:3.4vh; font-weight:900; }
+  .medalha { font-size:4vh; }
+
+  /* celebração */
+  .confetti { position:fixed; top:-10vh; width:1.6vh; height:2.6vh; border-radius:2px; animation:fall linear forwards; z-index:5; }
+  @keyframes fall { to { transform:translateY(120vh) rotate(720deg); opacity:.4; } }
+  .celebra { z-index:10; }
+</style>
+</head>
+<body>
+
+<div class="tela" id="t1"><div class="logo">TO GO DAY/NIGHT</div><div class="emoji">🎯</div><h1>TO GO HUNT</h1><div class="txt">Tem um desafio escondido nesta loja.</div></div>
+<div class="tela" id="t2"><div class="logo">TO GO HUNT</div><div class="emoji">🔦</div><div class="txt">Procure a prateleira iluminada.</div><div class="sub">Ela está marcada com uma luz especial.</div></div>
+<div class="tela" id="t3"><div class="logo">TO GO HUNT</div><div class="emoji">📱</div><div class="txt">Escaneie o QR Code.</div><div class="sub">Use a câmera do seu celular.</div></div>
+<div class="tela" id="t4"><div class="logo">TO GO HUNT</div><div class="emoji">🏆</div><h1>RANKING</h1><div class="rank" id="rank-list"></div></div>
+<div class="tela" id="t5"><div class="logo">TO GO HUNT</div><div class="emoji">🔥</div><div class="txt" id="challenge-name">Desafio ativo</div><div class="sub" id="challenge-points">+10 pontos</div></div>
+
+<script>
+var TELAS = 5;
+var atual = 0;
+var segPorTela = 5000;
+var rank = [];
+var ultimoSucesso = null;
+var desafio = null;
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function mostrar(i){
+  document.querySelectorAll('.tela').forEach(function(t){ t.classList.remove('ativa'); });
+  document.getElementById('t' + (i+1)).classList.add('ativa');
+}
+
+function renderRank(){
+  var el = document.getElementById('rank-list');
+  if(!rank.length){ el.innerHTML = '<div class="sub">Ainda sem participantes. Seja o primeiro!</div>'; return; }
+  var medalhas = ['🥇','🥈','🥉'];
+  var html = '';
+  rank.forEach(function(p, i){
+    var pos = i < 3 ? '<span class="medalha">'+medalhas[i]+'</span>' : '<span class="pos">'+(i+1)+'</span>';
+    html += '<div class="row">'+pos+'<span class="code">#'+esc(p.code)+'</span><span class="nick">'+esc(p.nickname)+'</span><span class="pts">'+p.points+' pts</span></div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderDesafio(){
+  var n = document.getElementById('challenge-name');
+  var p = document.getElementById('challenge-points');
+  if(desafio){
+    n.textContent = desafio.name;
+    p.textContent = '+' + desafio.points + ' pontos';
+  } else {
+    n.textContent = 'Nenhum desafio ativo agora';
+    p.textContent = 'Volte em breve!';
+  }
+}
+
+function atualizar(){
+  fetch('/api/hunt/state')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if(!d.ok) return;
+      rank = d.ranking || [];
+      desafio = d.activeChallenge;
+      renderRank();
+      renderDesafio();
+      // detecta novo sucesso para mostrar celebração
+      var ls = d.lastSuccess;
+      if(ls && ls.at && (!ultimoSucesso || ls.at !== ultimoSucesso)){
+        ultimoSucesso = ls.at;
+        celebrar(ls);
+      }
+    })
+    .catch(function(){});
+}
+
+function celebrar(ls){
+  var overlay = document.createElement('div');
+  overlay.className = 'tela ativa celebra';
+  overlay.innerHTML = '<div class="logo">TO GO HUNT</div><div class="emoji">🎉</div><div class="txt">Parabéns, ' + esc(ls.nickname) + '!</div><div class="txt" style="color:var(--accent2)">+' + ls.points + ' pontos</div>';
+  document.body.appendChild(overlay);
+  for(var i=0;i<60;i++){
+    var c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random()*100 + 'vw';
+    c.style.background = ['#ff4d6d','#ffd166','#06d6a0','#4d7cff','#ff7b4d'][Math.floor(Math.random()*5)];
+    c.style.animationDuration = (2 + Math.random()*2) + 's';
+    c.style.animationDelay = Math.random()*0.4 + 's';
+    document.body.appendChild(c);
+  }
+  setTimeout(function(){ overlay.remove(); }, 6000);
+}
+
+setInterval(function(){ atual = (atual + 1) % TELAS; mostrar(atual); }, segPorTela);
+setInterval(atualizar, 3000);
+
+atualizar();
+mostrar(0);
+</script>
+</body>
+</html>

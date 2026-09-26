@@ -34,3 +34,23 @@ services:
         value: togo2026
       - key: CONFIG_DB_URL
         value: https://loja-bemvindo-default-rtdb.firebaseio.com/
+
+  - type: web
+    name: togo-hunt
+    runtime: node
+    buildCommand: ""
+    startCommand: node togo-hunt/server.js
+    plan: free
+    envVars:
+      - key: FIREBASE_DB
+        value: https://loja-bemvindo-default-rtdb.firebaseio.com
+      - key: DB_ROOT
+        value: togohunt
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASS
+        value: togo2026
+      - key: STORE_ID
+        value: store1
+      - key: STORE_NAME
+        value: TO GO DAY/NIGHT
