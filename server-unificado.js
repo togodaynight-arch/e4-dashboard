@@ -342,7 +342,17 @@ function handlePublic(req, res) {
 }
 
 // ========== MAIN SERVER ==========
+const hunt = require('./togo-hunt/server');
+
 const server = http.createServer((req, res) => {
+    const urlPath = req.url.split('?')[0];
+
+    // TO GO HUNT - jogo (publico). Delega para o servidor do jogo.
+    if (/^\/(monitor|hunt|diagnostico|admin|api\/hunt|api\/devices|api\/admin)/.test(urlPath)) {
+        hunt.handler(req, res);
+        return;
+    }
+
     // Endpoints publicos para a tela de boas-vindas (sem Basic Auth)
     if (req.url.startsWith('/public/')) { handlePublic(req, res); return; }
 

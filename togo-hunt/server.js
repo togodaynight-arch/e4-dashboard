@@ -117,6 +117,12 @@ function slugSeguro(s) {
     return String(s || '').toLowerCase().replace(/[^a-z0-9\-_]/g, '').slice(0, 40);
 }
 
+function hostDoReq(req) {
+    const proto = String(req.headers['x-forwarded-proto'] || 'http').split(',')[0].trim();
+    const host = req.headers['host'];
+    return proto + '://' + (host || ('localhost:' + PORT));
+}
+
 // ========== DADOS ==========
 
 async function getChallenge(slug) {
@@ -482,7 +488,7 @@ async function handler(req, res) {
                 };
                 challenges[slug] = ch;
                 await fbPut('challenges', challenges);
-                sendJSON(res, 200, { ok: true, challenge: ch, qrUrl: BASE_URL + '/hunt/' + slug });
+                sendJSON(res, 200, { ok: true, challenge: ch, qrUrl: hostDoReq(req) + '/hunt/' + slug });
                 return;
             }
         }
@@ -504,7 +510,7 @@ async function handler(req, res) {
             if (body.validTo != null) ch.validTo = body.validTo;
             challenges[slug] = ch;
             await fbPut('challenges', challenges);
-            sendJSON(res, 200, { ok: true, challenge: ch, qrUrl: BASE_URL + '/hunt/' + slug });
+            sendJSON(res, 200, { ok: true, challenge: ch, qrUrl: hostDoReq(req) + '/hunt/' + slug });
             return;
         }
 
@@ -560,15 +566,28 @@ process.on('unhandledRejection', (e) => {
     console.error('[unhandledRejection]', e && e.message ? e.message : e);
 });
 
-server.listen(PORT, () => {
-    console.log('==============================================');
-    console.log('  TO GO HUNT - servidor V1');
-    console.log('==============================================');
-    console.log('  Monitor:      ' + BASE_URL + '/monitor');
-    console.log('  Admin:        ' + BASE_URL + '/admin');
-    console.log('  Diagnostico:  ' + BASE_URL + '/diagnostico');
-    console.log('  Cliente (QR): ' + BASE_URL + '/hunt/ABC123');
-    console.log('  Loja:         ' + STORE_ID + ' (' + STORE_NAME + ')');
-    console.log('  Firebase:     ' + FIREBASE_DB + '/' + DB_ROOT);
-    console.log('==============================================');
-});
+// Permite ser usado como modulo (integrado ao servidor ja publicado) ou sozinho
+function handlerPublico() {
+    return (req, res) => {
+        handler(req, res).catch((e) => {
+            console.error('[ERRO] ', e && e.message ? e.message : e);
+            try { sendJSON(res, 500, { ok: false, erro: 'erro_interno' }); } catch (_) {}
+        });
+    };
+}
+module.exports = { handler: handlerPublico() };
+
+if (require.main === module) {
+    server.listen(PORT, () => {
+        console.log('==============================================');
+        console.log('  TO GO HUNT - servidor V1');
+        console.log('==============================================');
+        console.log('  Monitor:      ' + BASE_URL + '/monitor');
+        console.log('  Admin:        ' + BASE_URL + '/admin');
+        console.log('  Diagnostico:  ' + BASE_URL + '/diagnostico');
+        console.log('  Cliente (QR): ' + BASE_URL + '/hunt/ABC123');
+        console.log('  Loja:         ' + STORE_ID + ' (' + STORE_NAME + ')');
+        console.log('  Firebase:     ' + FIREBASE_DB + '/' + DB_ROOT);
+        console.log('==============================================');
+    });
+}

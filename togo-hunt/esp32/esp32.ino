@@ -23,7 +23,7 @@
 const char* WIFI_SSID   = "NETPARQUE-DIEGO";
 const char* WIFI_PASS   = "NPQ274950";
 
-const char* SERVER_URL  = "https://togo-hunt.onrender.com";  // URL do servidor (sem barra final)
+const char* SERVER_URL  = "https://e4-dashboard-2lvk.onrender.com";  // URL do servidor (sem barra final)
 const char* DEVICE_ID   = "esp32-1";
 const char* STORE_ID    = "store1";
 
