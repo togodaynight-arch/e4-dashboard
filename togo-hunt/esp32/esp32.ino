@@ -29,7 +29,7 @@ const char* STORE_ID    = "store1";
 
 // LED (WS2811 - DATA no GPIO, alimentacao 12V externa, GND comum)
 #define LED_PIN      4
-#define NUM_LEDS     12      // trecho de 10-30cm (60 LED/m => 12 = ~20cm)
+#define NUM_LEDS     900     // quantidade de LEDs da fita (ex: 12 = ~20cm; 900 = fita longa)
 #define LED_TYPE     NEO_RBG // se a cor sair trocada, teste NEO_RGB
 #define BRILHO_BASE  60      // brilho da pulsacao (0-255)
 
