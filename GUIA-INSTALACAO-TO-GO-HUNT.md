@@ -197,3 +197,27 @@ Abra `https://SEU-SERVIDOR.onrender.com/diagnostico` para ver em uma tela:
 - ESP32 🟢 (online/offline + último heartbeat)
 
 Se algo estiver vermelho, confira a internet da loja e se o ESP32 está ligado.
+
+---
+
+## 14. Sensor de som (opcional) — KEYES KY-038
+
+Opcional: dá para ligar um **sensor de som** para a fita acender com uma palma/barulho.
+
+**Ligação (3 fios):**
+
+| Sensor KEYES | ESP32 |
+| --- | --- |
+| VCC | 3.3V |
+| GND | GND |
+| DO (saída digital) | GPIO 32 |
+| AO | (não usar) |
+
+- O sensor tem um **parafuso pequeno** (potenciômetro) que ajusta a sensibilidade.
+- Gire até o LED do sensor acender quando fizer barulho (palma) e ficar apagado no silêncio.
+- Ao detectar som, a fita faz a **animação de comemoração** (corrida de luz) por ~4 segundos.
+
+**Ajustes no código** (`esp32.ino`, na parte "SENSOR DE SOM"):
+- `SOUND_HABILITADO`: `true` (ligado) ou `false` (desligado).
+- `SOUND_PIN`: pino do DO (padrão `32`).
+- `SOUND_NIVEL`: `LOW` (padrão). Se a fita não acender com som, troque por `HIGH`.
