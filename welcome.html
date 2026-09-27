@@ -24,7 +24,7 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 .promo{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px;opacity:0;transition:opacity 0.6s;background-size:cover;background-position:center}
 .promo.show{display:flex;opacity:1}
 .promo-tag{font-size:18px;letter-spacing:8px;color:var(--cor,#d9b759);text-transform:uppercase;margin-bottom:24px;font-weight:600}
-.promo-logo{max-height:80px;max-width:70%;margin-bottom:20px;display:none}
+.promo-logo{max-height:110px;max-width:60%;margin-bottom:22px;display:none;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5))}
 .promo-titulo{font-size:var(--fs-promo-titulo,88px);font-weight:900;color:#fff;letter-spacing:2px;line-height:1.05;margin-bottom:16px;text-shadow:0 0 60px var(--cor,rgba(217,183,89,0.4))}
 .promo-preco{font-size:var(--fs-preco,96px);font-weight:900;color:var(--cor,#d9b759);letter-spacing:2px;margin-bottom:16px;display:none;text-shadow:0 0 50px var(--cor,rgba(217,183,89,0.5))}
 .promo-desc{font-size:var(--fs-promo-desc,32px);color:#c9d0ee;letter-spacing:2px;font-weight:300;max-width:80%}
@@ -42,6 +42,14 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 .hunt-rank-code{font-size:20px;font-weight:800;color:#ffd166;letter-spacing:2px}
 .hunt-rank-nome{flex:1;text-align:left;font-size:20px;color:#e6e6f7}
 .hunt-rank-pts{font-size:22px;font-weight:900;color:#fff}
+
+.noticias{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:60px;opacity:0;transition:opacity .6s;background:radial-gradient(1200px 700px at 50% -10%, #0f1f33 0%, #060612 60%)}
+.noticias.show{display:flex;opacity:1}
+.noticias-tag{font-size:24px;letter-spacing:4px;color:#d9b759;text-transform:uppercase;margin-bottom:34px;font-weight:600}
+.noticias-lista{display:flex;flex-direction:column;gap:16px;width:min(1000px,85vw)}
+.noticia{display:flex;gap:16px;align-items:flex-start}
+.n-num{font-size:26px;font-weight:900;color:#d9b759;flex-shrink:0;width:36px;text-align:center}
+.n-titulo{font-size:26px;color:#e5e7f0;line-height:1.35;text-align:left}
 
 .imagem{position:fixed;inset:0;display:none;opacity:0;transition:opacity .6s;background:#000}
 .imagem.show{display:block;opacity:1}
@@ -134,6 +142,11 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
             <div class="hunt-pts" id="hunt-pts"></div>
             <div class="hunt-desc">Procure a prateleira iluminada e escaneie o QR Code.</div>
             <div class="hunt-rank" id="hunt-rank"></div>
+        </div>
+
+        <div class="noticias" id="noticias">
+            <div class="noticias-tag">📰 Últimas notícias</div>
+            <div class="noticias-lista" id="noticias-lista"></div>
         </div>
 
         <div class="welcome" id="welcome">
@@ -423,6 +436,7 @@ function esconderTudo(){
     document.getElementById('clima').classList.remove('show');
     document.getElementById('video-slide').classList.remove('show');
     document.getElementById('hunt').classList.remove('show');
+    document.getElementById('noticias').classList.remove('show');
     document.getElementById('promo-glow').style.opacity = '0';
     document.getElementById('promo').style.backgroundImage = 'none';
     pararVideo();
@@ -469,6 +483,7 @@ function mostrarSlide(s){
     else if (s.tipo === 'clima') mostrarClima();
     else if (s.tipo === 'video') mostrarVideo(s);
     else if (s.tipo === 'hunt') mostrarHunt();
+    else if (s.tipo === 'noticias') mostrarNoticias();
     else mostrarIdle();
     // LED atrás da TV: acende se a tela tiver a opção ligada
     enviarLED(!!s.led, s.ledCor);
@@ -613,6 +628,28 @@ function mostrarVideo(s){
 
 function pararVideo(){ document.getElementById('video-frame').src = ''; }
 
+// ========== NOTÍCIAS (G1 via rss2json) ==========
+var NEWS_URL = 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fg1.globo.com%2Frss%2Fg1%2F';
+
+function carregarNoticias(){
+    fetch(NEWS_URL)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        var itens = (d.items || []).slice(0, 6);
+        var html = '';
+        itens.forEach(function(n, i){
+            html += '<div class="noticia"><span class="n-num">' + (i+1) + '</span><span class="n-titulo">' + n.title + '</span></div>';
+        });
+        document.getElementById('noticias-lista').innerHTML = html || '<div class="n-titulo">Carregando notícias...</div>';
+    })
+    .catch(function(){});
+}
+
+function mostrarNoticias(){
+    esconderTudo();
+    document.getElementById('noticias').classList.add('show');
+}
+
 function iniciarCarrossel(){
     if (carouselTimer) clearTimeout(carouselTimer);
     mostrarIdle();
@@ -695,11 +732,13 @@ carregarControlesTela();
 carregarConteudo();
 carregarClima();
 carregarHunt();
+carregarNoticias();
 iniciarCarrossel();
 
 setInterval(carregarConteudo, 10000);
 setInterval(carregarClima, 15 * 60 * 1000);
 setInterval(carregarHunt, 15000);
+setInterval(carregarNoticias, 30 * 60 * 1000);
 setInterval(verificarEntrada, 3000);
 </script>
 </body>

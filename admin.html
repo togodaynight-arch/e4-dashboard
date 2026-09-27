@@ -145,6 +145,7 @@ input[type="range"]{padding:0;accent-color:#d9b759;cursor:pointer}
             <button onclick="addSlide('imagem')">+ Imagem</button>
             <button onclick="addSlide('video')">+ Vídeo</button>
             <button onclick="addSlide('clima')">+ Clima</button>
+            <button onclick="addSlide('noticias')">+ Notícias</button>
         </div>
     </div>
 
@@ -179,7 +180,7 @@ function carregarControlesTela(){
     document.querySelectorAll('#rot-btns button').forEach(function(b){ b.classList.toggle('active', parseInt(b.dataset.r)===tela.rotacao); });
 }
 
-var TIPO_LABEL = { promo:'📝 Texto', imagem:'🖼️ Imagem', video:'🎬 Vídeo', clima:'🌡️ Clima' };
+var TIPO_LABEL = { promo:'📝 Texto', imagem:'🖼️ Imagem', video:'🎬 Vídeo', clima:'🌡️ Clima', noticias:'📰 Notícias' };
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function msg(t, ok){var m=document.getElementById('msg');m.textContent=t;m.className='msg '+(ok?'ok':'erro');}
@@ -189,6 +190,7 @@ function novoSlide(tipo){
     if(tipo==='imagem') return {tipo:'imagem', url:'', ajuste:'contain', led:false, ledCor:'#ffaa00', tempo:8};
     if(tipo==='video') return {tipo:'video', url:'', led:false, ledCor:'#ffaa00', tempo:30};
     if(tipo==='clima') return {tipo:'clima', led:false, ledCor:'#ffaa00', tempo:8};
+    if(tipo==='noticias') return {tipo:'noticias', led:false, ledCor:'#ffaa00', tempo:15};
     return {tipo:'promo', titulo:'', preco:'', descricao:'', cor:'#d9b759', fonte:100, imagem:'', led:false, ledCor:'#ffaa00', tempo:8};
 }
 
@@ -347,6 +349,11 @@ function climaBody(s,i){
         tempoHTML(s,i);
 }
 
+function noticiasBody(s,i){
+    return '<div class="hint" style="margin:0 0 4px">Mostra as principais notícias do Brasil (G1). Atualiza sozinha.</div>' +
+        tempoHTML(s,i);
+}
+
 function cardHTML(s,i){
     var opts = Object.keys(TIPO_LABEL).map(function(t){return '<option value="'+t+'"'+(s.tipo===t?' selected':'')+'>'+TIPO_LABEL[t]+'</option>'}).join('');
     var body = '';
@@ -354,6 +361,7 @@ function cardHTML(s,i){
     else if(s.tipo==='imagem') body = imagemBody(s,i);
     else if(s.tipo==='video') body = videoBody(s,i);
     else if(s.tipo==='clima') body = climaBody(s,i);
+    else if(s.tipo==='noticias') body = noticiasBody(s,i);
 
     return '<div class="slide-card" data-idx="'+i+'">' +
         '<div class="slide-head">' +
