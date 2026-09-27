@@ -24,7 +24,8 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 .promo{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px;opacity:0;transition:opacity 0.6s;background-size:cover;background-position:center}
 .promo.show{display:flex;opacity:1}
 .promo-tag{font-size:18px;letter-spacing:8px;color:var(--cor,#d9b759);text-transform:uppercase;margin-bottom:24px;font-weight:600}
-.promo-logo{max-height:110px;max-width:60%;margin-bottom:22px;display:none;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5))}
+.logo-overlay{position:fixed;bottom:22px;right:22px;z-index:60;background:rgba(8,8,18,0.55);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:10px 16px;backdrop-filter:blur(4px)}
+.logo-overlay img{max-height:78px;max-width:210px;object-fit:contain;display:block}
 .promo-titulo{font-size:var(--fs-promo-titulo,88px);font-weight:900;color:#fff;letter-spacing:2px;line-height:1.05;margin-bottom:16px;text-shadow:0 0 60px var(--cor,rgba(217,183,89,0.4))}
 .promo-preco{font-size:var(--fs-preco,96px);font-weight:900;color:var(--cor,#d9b759);letter-spacing:2px;margin-bottom:16px;display:none;text-shadow:0 0 50px var(--cor,rgba(217,183,89,0.5))}
 .promo-desc{font-size:var(--fs-promo-desc,32px);color:#c9d0ee;letter-spacing:2px;font-weight:300;max-width:80%}
@@ -116,7 +117,6 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
         </div>
 
         <div class="promo" id="promo">
-            <img class="promo-logo" id="promo-logo" src="" alt="">
             <div class="promo-tag">PROMOÇÃO</div>
             <div class="promo-titulo" id="promo-titulo"></div>
             <div class="promo-preco" id="promo-preco"></div>
@@ -154,6 +154,10 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
             <div class="greeting" id="greeting-display">BEM-VINDO</div>
             <div class="name" id="customer-name-display">---</div>
             <div class="store" id="customer-info-display"></div>
+        </div>
+
+        <div class="logo-overlay" id="logo-overlay" style="display:none">
+            <img id="logo-overlay-img" src="" alt="">
         </div>
     </div>
 </div>
@@ -317,6 +321,7 @@ function carregarConteudo() {
         document.getElementById('idle-logo').textContent = conteudo.loja;
         document.getElementById('store-name-display').textContent = conteudo.loja;
         document.getElementById('clima-cidade').textContent = conteudo.cidade || 'Cachoeirinha - RS';
+        carregarLogo();
         // ajustes de tela vindos do painel de mídia (só aplica se ninguém está mexendo aqui)
         if (!document.getElementById('panel').classList.contains('open')) {
             definirTelaServidor(conteudo.tela);
@@ -326,6 +331,20 @@ function carregarConteudo() {
         }
     })
     .catch(function(){});
+}
+
+// ========== LOGO (marca d'água fixa em todas as telas) ==========
+function carregarLogo(){
+    if (conteudo.logo) {
+        obterImagem(conteudo.logo, function(src){
+            if (src) {
+                document.getElementById('logo-overlay-img').src = src;
+                document.getElementById('logo-overlay').style.display = 'block';
+            }
+        });
+    } else {
+        document.getElementById('logo-overlay').style.display = 'none';
+    }
 }
 
 // ========== IMAGENS (link ou enviadas pro banco) ==========
@@ -506,16 +525,6 @@ function mostrarPromo(p){
         precoEl.style.display = 'block';
     } else {
         precoEl.style.display = 'none';
-    }
-
-    // logo da loja
-    var logoEl = document.getElementById('promo-logo');
-    if (conteudo.logo) {
-        obterImagem(conteudo.logo, function(src){
-            if (src) { logoEl.src = src; logoEl.style.display = 'block'; }
-        });
-    } else {
-        logoEl.style.display = 'none';
     }
 
     var promo = document.getElementById('promo');
