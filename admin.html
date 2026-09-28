@@ -138,6 +138,22 @@ input[type="range"]{padding:0;accent-color:#d9b759;cursor:pointer}
     </div>
 
     <div class="card">
+        <h2>🎵 Música ambiente</h2>
+        <label>Escolha uma rádio (toca sem parar)</label>
+        <div class="add-row">
+            <button type="button" onclick="setMusica('https://stream.radioparadise.com/mp3-192')">🎧 Pop/Rock</button>
+            <button type="button" onclick="setMusica('https://stream.radioparadise.com/mellow-192')">🌙 Calma</button>
+            <button type="button" onclick="setMusica('https://stream.radioparadise.com/rock-192')">🎸 Rock</button>
+            <button type="button" onclick="setMusica('')">🔇 Sem música</button>
+        </div>
+        <label>Ou cole o link de outra rádio/playlist</label>
+        <input type="text" id="musicaUrl" placeholder="https://...stream de música...">
+        <label>Volume: <span class="range-val" id="musicaVolVal">60%</span></label>
+        <input type="range" id="musicaVolume" min="0" max="100" value="60" oninput="document.getElementById('musicaVolVal').textContent=this.value+'%'">
+        <div class="hint">No TV box (Fully Kiosk), ative "reprodução automática de áudio" pra tocar sem precisar clicar.</div>
+    </div>
+
+    <div class="card">
         <h2>🖼️ Telas (rodízio)</h2>
         <div id="slides"></div>
         <div class="add-row">
@@ -162,8 +178,14 @@ var slides = [];
 var uploadTarget = null;
 var logo = '';
 var espIp = '';
+var musica = { url:'', volume:60 };
 
 var tela = { rotacao:0, zoom:100, fsNome:100, fsSaudacao:72, fsLogo:24, fsIdleLogo:60, fsPromoTitulo:88, fsPromoDesc:32 };
+
+function setMusica(url){
+    musica.url = url;
+    document.getElementById('musicaUrl').value = url;
+}
 
 function setRotacao(g){ tela.rotacao = g; document.querySelectorAll('#rot-btns button').forEach(function(b){ b.classList.toggle('active', parseInt(b.dataset.r)===g); }); }
 function setZoom(v){ tela.zoom = parseInt(v); document.getElementById('zoom-val').textContent = v + '%'; }
@@ -466,6 +488,10 @@ function carregar(){
         atualizarLogoPreview();
         espIp = c.espIp||'';
         document.getElementById('espIp').value = espIp;
+        musica = c.musica || { url:'', volume:60 };
+        document.getElementById('musicaUrl').value = musica.url || '';
+        document.getElementById('musicaVolume').value = musica.volume != null ? musica.volume : 60;
+        document.getElementById('musicaVolVal').textContent = (musica.volume != null ? musica.volume : 60) + '%';
         if(c.tela){ tela = Object.assign({}, tela, c.tela); }
         carregarControlesTela();
         slides = c.slides||[];
@@ -492,6 +518,7 @@ function salvar(){
         tempoBemvindo: parseInt(document.getElementById('tempoBemvindo').value)||15,
         logo: (logo||'').trim(),
         espIp: (document.getElementById('espIp').value||'').trim(),
+        musica: { url: (document.getElementById('musicaUrl').value||'').trim(), volume: parseInt(document.getElementById('musicaVolume').value)||60 },
         tela: tela,
         slides: limpo
     };

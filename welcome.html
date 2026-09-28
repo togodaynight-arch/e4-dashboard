@@ -223,6 +223,8 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 
 <div class="hint">Pressione <b>C</b> (ajustes da tela) · <b>A</b> (configurações completas)</div>
 
+<audio id="musica" loop></audio>
+
 <script>
 var FIREBASE_URL = 'https://loja-bemvindo-default-rtdb.firebaseio.com/config.json';
 var FIREBASE_IMAGENS = 'https://loja-bemvindo-default-rtdb.firebaseio.com/imagens/';
@@ -322,6 +324,7 @@ function carregarConteudo() {
         document.getElementById('store-name-display').textContent = conteudo.loja;
         document.getElementById('clima-cidade').textContent = conteudo.cidade || 'Cachoeirinha - RS';
         carregarLogo();
+        configurarMusica();
         // ajustes de tela vindos do painel de mídia (só aplica se ninguém está mexendo aqui)
         if (!document.getElementById('panel').classList.contains('open')) {
             definirTelaServidor(conteudo.tela);
@@ -346,6 +349,26 @@ function carregarLogo(){
         document.getElementById('logo-overlay').style.display = 'none';
     }
 }
+
+// ========== MÚSICA (rádio/stream contínuo) ==========
+function configurarMusica(){
+    var a = document.getElementById('musica');
+    var m = conteudo.musica;
+    if (m && m.url) {
+        if (a.getAttribute('src') !== m.url) {
+            a.src = m.url;
+        }
+        a.volume = ((m.volume == null ? 60 : m.volume)) / 100;
+        a.play().catch(function(){});
+    } else {
+        a.pause();
+        a.removeAttribute('src');
+    }
+}
+
+// autoplay de áudio é bloqueado até a 1ª interação; isso libera o som
+document.addEventListener('click', function(){ document.getElementById('musica').play().catch(function(){}); });
+document.addEventListener('touchstart', function(){ document.getElementById('musica').play().catch(function(){}); });
 
 // ========== IMAGENS (link ou enviadas pro banco) ==========
 var cacheImagens = {};
