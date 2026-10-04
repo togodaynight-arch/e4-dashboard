@@ -316,24 +316,37 @@ function carregarConteudo() {
     fetch(FIREBASE_URL)
     .then(function(r){ return r.json(); })
     .then(function(c){
-        var antes = JSON.stringify(conteudo);
-        conteudo = c || conteudo;
-        if (!conteudo.slides || conteudo.slides.length === 0) conteudo.slides = SLIDES_DEFAULT;
-        if (!conteudo.tempoBemvindo) conteudo.tempoBemvindo = 15;
-        document.getElementById('idle-logo').textContent = conteudo.loja;
-        document.getElementById('store-name-display').textContent = conteudo.loja;
-        document.getElementById('clima-cidade').textContent = conteudo.cidade || 'Cachoeirinha - RS';
-        carregarLogo();
-        configurarMusica();
-        // ajustes de tela vindos do painel de mídia (só aplica se ninguém está mexendo aqui)
-        if (!document.getElementById('panel').classList.contains('open')) {
-            definirTelaServidor(conteudo.tela);
+        if (c && c.slides) {
+            try { localStorage.setItem('conteudo-cache', JSON.stringify(c)); } catch(e) {}
         }
-        if (JSON.stringify(conteudo) !== antes) {
-            if (modo !== 'welcome') iniciarCarrossel();
-        }
+        aplicarConteudo(c);
     })
-    .catch(function(){});
+    .catch(function(){
+        // sem internet: usa o que foi salvo da última vez
+        try {
+            var cache = localStorage.getItem('conteudo-cache');
+            if (cache) aplicarConteudo(JSON.parse(cache));
+        } catch(e) {}
+    });
+}
+
+function aplicarConteudo(c){
+    if (!c) return;
+    var antes = JSON.stringify(conteudo);
+    conteudo = c || conteudo;
+    if (!conteudo.slides || conteudo.slides.length === 0) conteudo.slides = SLIDES_DEFAULT;
+    if (!conteudo.tempoBemvindo) conteudo.tempoBemvindo = 15;
+    document.getElementById('idle-logo').textContent = conteudo.loja;
+    document.getElementById('store-name-display').textContent = conteudo.loja;
+    document.getElementById('clima-cidade').textContent = conteudo.cidade || 'Cachoeirinha - RS';
+    carregarLogo();
+    configurarMusica();
+    if (!document.getElementById('panel').classList.contains('open')) {
+        definirTelaServidor(conteudo.tela);
+    }
+    if (JSON.stringify(conteudo) !== antes) {
+        if (modo !== 'welcome') iniciarCarrossel();
+    }
 }
 
 // ========== LOGO (marca d'água fixa em todas as telas) ==========
@@ -772,6 +785,11 @@ setInterval(carregarClima, 15 * 60 * 1000);
 setInterval(carregarHunt, 15000);
 setInterval(carregarNoticias, 30 * 60 * 1000);
 setInterval(verificarEntrada, 3000);
+
+// ========== OFFLINE (funciona sem internet) ==========
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+}
 </script>
 </body>
 </html>
