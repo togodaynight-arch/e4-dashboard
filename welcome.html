@@ -17,9 +17,25 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 .scaler{position:absolute;inset:0;transform-origin:center center;transition:transform .3s}
 
 .idle{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:1;transition:opacity 0.5s}
-.idle.hidden{opacity:0;pointer-events:none}
 .idle-logo{font-size:var(--fs-idle-logo,60px);font-weight:900;color:#d9b759;letter-spacing:6px;margin-bottom:16px;text-transform:uppercase;text-shadow:0 0 40px rgba(217,183,89,0.25)}
 .idle-text{font-size:20px;letter-spacing:5px;color:#7a86b8;text-transform:uppercase}
+
+/* partículas douradas de fundo */
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* logo com anel pulsante (tela de espera) */
+.idle-logo-ring{width:190px;height:190px;border-radius:50%;border:3px solid rgba(217,183,89,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:28px;position:relative;animation:idlePulse 3s ease-in-out infinite;background:rgba(10,10,24,0.4)}
+.idle-logo-ring::after{content:'';position:absolute;inset:-12px;border-radius:50%;border:1px solid rgba(217,183,89,0.08);animation:idlePulse 3s ease-in-out infinite 0.5s}
+.idle-logo-ring .logo-img{max-width:78%;max-height:78%;object-fit:contain;filter:drop-shadow(0 0 28px rgba(217,183,89,0.3))}
+@keyframes idlePulse{0%,100%{transform:scale(1);border-color:rgba(217,183,89,0.18)}50%{transform:scale(1.05);border-color:rgba(217,183,89,0.4)}}
+
+/* barra de status (relógio) embaixo */
+.status-bar-bottom{position:fixed;bottom:18px;left:24px;right:24px;display:flex;align-items:center;justify-content:space-between;z-index:55;pointer-events:none}
+.status-left{display:flex;align-items:center;gap:10px}
+.status-dot{width:10px;height:10px;border-radius:50%;background:#10b981;box-shadow:0 0 10px #10b981;animation:statusBlink 2s ease-in-out infinite}
+@keyframes statusBlink{0%,100%{opacity:1}50%{opacity:0.4}}
+.status-label{color:rgba(255,255,255,0.45);font-size:13px;letter-spacing:1px}
+.status-clock{color:rgba(255,255,255,0.6);font-size:15px;letter-spacing:2px;font-variant-numeric:tabular-nums}
 
 .promo{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px;opacity:0;transition:opacity 0.6s;background-size:cover;background-position:center}
 .promo.show{display:flex;opacity:1}
@@ -110,8 +126,12 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 <div class="stage" id="stage">
     <div class="scaler" id="scaler">
         <div class="promo-glow" id="promo-glow"></div>
+        <canvas id="particles"></canvas>
 
         <div class="idle" id="idle">
+            <div class="idle-logo-ring">
+                <img class="logo-img" id="idle-logo-img" src="" alt="">
+            </div>
             <div class="idle-logo" id="idle-logo">TRANS BUS</div>
             <div class="idle-text">Aguardando clientes</div>
         </div>
@@ -158,6 +178,16 @@ body{font-family:'Montserrat',sans-serif;color:#fff;overflow:hidden;background:#
 
         <div class="logo-overlay" id="logo-overlay" style="display:none">
             <img id="logo-overlay-img" src="" alt="">
+        </div>
+
+        <div class="status-bar-bottom">
+            <div class="status-left">
+                <span class="status-dot"></span>
+                <span class="status-label" id="status-label">Sistema online</span>
+            </div>
+            <div class="status-right">
+                <span class="status-clock" id="clock">00:00</span>
+            </div>
         </div>
     </div>
 </div>
@@ -356,6 +386,7 @@ function carregarLogo(){
             if (src) {
                 document.getElementById('logo-overlay-img').src = src;
                 document.getElementById('logo-overlay').style.display = 'block';
+                document.getElementById('idle-logo-img').src = src;
             }
         });
     } else {
@@ -772,6 +803,53 @@ function verificarEntrada(){
     .catch(function(){});
 }
 
+// ========== PARTÍCULAS DE FUNDO ==========
+function initParticles(){
+    var canvas = document.getElementById('particles');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    var parts = [];
+    for (var i = 0; i < 40; i++) {
+        parts.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: Math.random() * 2 + 0.5,
+            speed: Math.random() * 0.4 + 0.1,
+            opacity: Math.random() * 0.4 + 0.05
+        });
+    }
+    function draw(){
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (var i = 0; i < parts.length; i++) {
+            var p = parts[i];
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(217, 183, 89, ' + p.opacity + ')';
+            ctx.fill();
+            p.y -= p.speed;
+            if (p.y < -10) { p.y = canvas.height + 10; p.x = Math.random() * canvas.width; }
+        }
+        requestAnimationFrame(draw);
+    }
+    draw();
+    window.addEventListener('resize', function(){
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+}
+
+// ========== RELÓGIO ==========
+function atualizarRelogio(){
+    var el = document.getElementById('clock');
+    if (!el) return;
+    var d = new Date();
+    var h = String(d.getHours()).padStart(2,'0');
+    var m = String(d.getMinutes()).padStart(2,'0');
+    el.textContent = h + ':' + m;
+}
+
 // ========== INICIALIZAÇÃO ==========
 carregarControlesTela();
 carregarConteudo();
@@ -779,12 +857,15 @@ carregarClima();
 carregarHunt();
 carregarNoticias();
 iniciarCarrossel();
+initParticles();
+atualizarRelogio();
 
 setInterval(carregarConteudo, 10000);
 setInterval(carregarClima, 15 * 60 * 1000);
 setInterval(carregarHunt, 15000);
 setInterval(carregarNoticias, 30 * 60 * 1000);
 setInterval(verificarEntrada, 3000);
+setInterval(atualizarRelogio, 1000);
 
 // ========== OFFLINE (funciona sem internet) ==========
 if ('serviceWorker' in navigator) {
