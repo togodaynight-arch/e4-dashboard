@@ -15,6 +15,22 @@ const OCCURRENCE_TYPES = ['1','2','8','13','32','41','42'];
 const AUTH_USER = process.env.AUTH_USER || 'colaborador';
 const AUTH_PASS = process.env.AUTH_PASS || '102027';
 
+// ========== TOTEM LED (ADICIONADO - DESLIGADO POR PADRAO) ==========
+// Nada aqui afeta o sistema atual enquanto TOTEM_ATIVO = false.
+const TOTEM_ATIVO = process.env.TOTEM_ATIVO === '1';   // ative com TOTEM_ATIVO=1
+const TOTEM_URL = process.env.TOTEM_URL || 'http://totem-logica.local';
+const TOTEM_TOKEN = process.env.TOTEM_TOKEN || 'totem123';
+
+// ========== CAIXA LUZ (ADICIONADO - DESLIGADO POR PADRAO) ==========
+const CAIXA_ATIVO = process.env.CAIXA_ATIVO === '1';
+const CAIXA_URL = process.env.CAIXA_URL || 'http://caixa-logica.local';
+const CAIXA_TOKEN = process.env.CAIXA_TOKEN || 'caixa123';
+
+// ========== LOJA CENTRAL (ADICIONADO - DESLIGADO POR PADRAO) ==========
+const LOJA_ATIVO = process.env.LOJA_ATIVO === '1';
+const LOJA_URL = process.env.LOJA_URL || 'http://loja-central.local';
+const LOJA_TOKEN = process.env.LOJA_TOKEN || 'loja123';
+
 let phpsessid = null;
 let sessExpires = 0;
 
@@ -39,6 +55,11 @@ function serveStatic(req, res) {
         if (subPath === '' || subPath === '/') subPath = '/index.html';
         if (subPath.startsWith('/')) subPath = subPath.substring(1);
         filePath = path.join(__dirname, 'conciliacao-site', subPath);
+    } else if (urlPath.startsWith('/yzy')) {
+        let subPath = urlPath.replace('/yzy', '');
+        if (subPath === '' || subPath === '/') subPath = '/index.html';
+        if (subPath.startsWith('/')) subPath = subPath.substring(1);
+        filePath = path.join(__dirname, 'conciliacao-yzy', subPath);
     } else if (urlPath.startsWith('/compras')) {
         let subPath = urlPath.replace('/compras', '');
         if (subPath === '' || subPath === '/') subPath = '/index.html';
@@ -159,9 +180,10 @@ async function ensureSession() {
 }
 
 // ========== OCORRENCIAS ==========
-function fetchOcorrencias(inicio, fim) {
+function fetchOcorrencias(inicio, fim, lojas) {
     inicio = inicio || '';
     fim = fim || '';
+    lojas = lojas || [1,2,3];
     return new Promise(async function(resolve, reject) {
         try { await ensureSession(); } catch(e) { reject(e); return; }
         var hoje = new Date();
@@ -176,7 +198,7 @@ function fetchOcorrencias(inicio, fim) {
             'filtro-filtro-data_fim': dataFimStr,
             'filtro-avancado': 'SIM'
         });
-        [1,2,3].forEach(function(id) { postData += '&filtro-filtro-id_lojas%5B%5D=' + id; });
+        lojas.forEach(function(id) { postData += '&filtro-filtro-id_lojas%5B%5D=' + id; });
         OCCURRENCE_TYPES.forEach(function(t) { postData += '&filtro-filtro-ws_ocorrencias_frente_caixa%5B%5D=' + t; });
 
         var opts = {
@@ -206,10 +228,10 @@ function fetchOcorrencias(inicio, fim) {
     });
 }
 
-function handleOcorrencias(req, res) {
+function handleOcorrencias(req, res, lojas) {
     var qs = querystring.parse((req.url.split('?')[1] || ''));
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' });
-    fetchOcorrencias(qs.inicio, qs.fim).then(function(dados) {
+    fetchOcorrencias(qs.inicio, qs.fim, lojas).then(function(dados) {
         var simplified = dados.map(function(o) {
             return {
                 id: o.id, data: o.data_ocorrencia, ocorrencia: o.ocorrencia,
@@ -227,7 +249,7 @@ function handleOcorrencias(req, res) {
 }
 
 // ========== ENTRADAS PORTA ==========
-function fetchEntradasPorta() {
+function fetchEntradasPorta(lojas) {
     return new Promise(async function(resolve, reject) {
         try { await ensureSession(); } catch(e) { reject(e); return; }
         var hoje = new Date();
@@ -240,6 +262,7 @@ function fetchEntradasPorta() {
             'filtro-filtro-periodo_final': dataStr,
             'filtro-avancado': 'SIM'
         });
+        (lojas || []).forEach(function(id) { postData += '&filtro-filtro-id_lojas%5B%5D=' + id; });
         var opts = {
             hostname: 'portal.e4sistemas.com.br',
             path: '/basico/log-porta-acessos/retornar-dados',
@@ -267,9 +290,9 @@ function fetchEntradasPorta() {
     });
 }
 
-function handleEntradasPorta(req, res) {
+function handleEntradasPorta(req, res, lojas) {
     res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache' });
-    fetchEntradasPorta().then(function(dados) {
+    fetchEntradasPorta(lojas).then(function(dados) {
         var simplified = dados.map(function(o) {
             return {
                 id: o.id, data: o.datahora, loja: o.loja, cliente: o.cliente,
@@ -344,8 +367,125 @@ function handlePublic(req, res) {
 // ========== MAIN SERVER ==========
 const hunt = require('./togo-hunt/server');
 
+// ========== TOTEM LED: encaminhamento de evento (ADICIONADO) ==========
+// DESLIGADO por padrao. So faz algo se TOTEM_ATIVO = true.
+function encaminharEventoTotem(tipo) {
+    if (!TOTEM_ATIVO) return;
+    var body = JSON.stringify({ tipo: tipo, token: TOTEM_TOKEN });
+    var r = http.request(TOTEM_URL + '/evento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+        timeout: 3000
+    }, function (resp) { resp.resume(); });
+    r.on('error', function () {});
+    r.on('timeout', function () { r.destroy(); });
+    r.write(body); r.end();
+}
+
+function handleTotemEvento(req, res) {
+    var body = '';
+    req.on('data', function (c) { body += c; });
+    req.on('end', function () {
+        var tipo = '';
+        try { tipo = (JSON.parse(body || '{}').tipo) || ''; } catch (e) {}
+        if (tipo !== 'aprovado' && tipo !== 'recusado') {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ erro: 'tipo deve ser aprovado ou recusado' }));
+            return;
+        }
+        encaminharEventoTotem(tipo);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, encaminhado: tipo }));
+    });
+}
+
+// ========== CAIXA LUZ: encaminhamento de evento (ADICIONADO) ==========
+// DESLIGADO por padrao. So faz algo se CAIXA_ATIVO = true.
+function encaminharEventoCaixa(tipo) {
+    if (!CAIXA_ATIVO) return;
+    var body = JSON.stringify({ tipo: tipo, token: CAIXA_TOKEN });
+    var r = http.request(CAIXA_URL + '/evento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+        timeout: 3000
+    }, function (resp) { resp.resume(); });
+    r.on('error', function () {});
+    r.on('timeout', function () { r.destroy(); });
+    r.write(body); r.end();
+}
+
+function handleCaixaEvento(req, res) {
+    var body = '';
+    req.on('data', function (c) { body += c; });
+    req.on('end', function () {
+        var tipo = '';
+        try { tipo = (JSON.parse(body || '{}').tipo) || ''; } catch (e) {}
+        if (tipo !== 'aprovado' && tipo !== 'recusado' && tipo !== 'atencao') {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ erro: 'tipo deve ser aprovado, recusado ou atencao' }));
+            return;
+        }
+        encaminharEventoCaixa(tipo);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, encaminhado: tipo }));
+    });
+}
+
+// ========== LOJA CENTRAL: encaminhamento (ADICIONADO - DESLIGADO por padrao) ==========
+function encaminharEventoLoja(tipo) {
+    if (!LOJA_ATIVO) return;
+    var body = JSON.stringify({ tipo: tipo, token: LOJA_TOKEN });
+    var r = http.request(LOJA_URL + '/evento', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+        timeout: 3000
+    }, function (resp) { resp.resume(); });
+    r.on('error', function () {});
+    r.on('timeout', function () { r.destroy(); });
+    r.write(body); r.end();
+}
+
+function handleLojaEvento(req, res) {
+    var body = '';
+    req.on('data', function (c) { body += c; });
+    req.on('end', function () {
+        var tipo = '';
+        try { tipo = (JSON.parse(body || '{}').tipo) || ''; } catch (e) {}
+        var ok = ['aprovado','recusado','cliente_entrou','atencao'];
+        if (ok.indexOf(tipo) < 0) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ erro: 'tipo invalido' }));
+            return;
+        }
+        encaminharEventoLoja(tipo);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, encaminhado: tipo }));
+    });
+}
+
 const server = http.createServer((req, res) => {
     const urlPath = req.url.split('?')[0];
+
+    // ========== LOJA CENTRAL: rota isolada (ADICIONADO - DESLIGADO por padrao) ==========
+    if (urlPath === '/loja-evento') {
+        if (!LOJA_ATIVO) { res.writeHead(404); res.end('not found'); return; }
+        handleLojaEvento(req, res);
+        return;
+    }
+
+    // ========== CAIXA LUZ: rota isolada (ADICIONADO - DESLIGADO por padrao) ==========
+    if (urlPath === '/caixa-evento') {
+        if (!CAIXA_ATIVO) { res.writeHead(404); res.end('not found'); return; }
+        handleCaixaEvento(req, res);
+        return;
+    }
+
+    // ========== TOTEM LED: rota isolada (ADICIONADO - DESLIGADO por padrao) ==========
+    if (urlPath === '/totem-evento') {
+        if (!TOTEM_ATIVO) { res.writeHead(404); res.end('not found'); return; }
+        handleTotemEvento(req, res);
+        return;
+    }
 
     // TO GO HUNT - jogo (publico). Delega para o servidor do jogo.
     if (/^\/(monitor|hunt|diagnostico|admin|api\/hunt|api\/devices|api\/admin)/.test(urlPath)) {
@@ -375,6 +515,8 @@ const server = http.createServer((req, res) => {
         res.end();
         return;
     }
+    if (req.url.startsWith('/ocorrencias-yzy')) { handleOcorrencias(req, res, [6]); return; }
+    if (req.url.startsWith('/entradas-porta-yzy')) { handleEntradasPorta(req, res, [6]); return; }
     if (req.url.startsWith('/ocorrencias')) { handleOcorrencias(req, res); return; }
     if (req.url.startsWith('/entradas-porta')) { handleEntradasPorta(req, res); return; }
     if (req.url.startsWith('/api/')) { proxyAPI(req, res); return; }
@@ -385,5 +527,6 @@ server.listen(PORT, () => {
     console.log('Dashboard E4 rodando na porta ' + PORT);
     console.log('Vendas: http://localhost:' + PORT);
     console.log('Conciliacao: http://localhost:' + PORT + '/conciliacao');
+    console.log('YZY: http://localhost:' + PORT + '/yzy');
     console.log('Compras: http://localhost:' + PORT + '/compras');
 });
